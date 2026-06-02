@@ -6285,13 +6285,154 @@ function renderPlaceholder(title) {
   `);
 }
 
+function renderLandingPage() {
+  const programs = [
+    ["✦", "Aswaja", "Merawat amaliyah Aswaja An-Nahdliyah dalam kehidupan berjamaah."],
+    ["▤", "Dakwah", "Menguatkan majelis ilmu, pengajian, dan syiar Islam rahmatan lil alamin."],
+    ["♥", "Sosial", "Hadir bersama warga melalui kepedulian dan gotong royong."],
+    ["↗", "Ekonomi Umat", "Mendorong kemandirian warga dan penguatan usaha lokal."],
+    ["◉", "Digitalisasi", "Merapikan layanan, informasi, dan transparansi organisasi."]
+  ];
+  const institutions = [
+    ["Muslimat NU", "Ruang khidmah perempuan NU untuk keluarga dan masyarakat."],
+    ["Fatayat NU", "Gerak perempuan muda untuk pemberdayaan dan kepedulian sosial."],
+    ["GP Ansor", "Kader muda yang menjaga tradisi, kebangsaan, dan pelayanan umat."],
+    ["IPNU - IPPNU", "Wadah belajar, berjejaring, dan bertumbuh bagi pelajar NU."]
+  ];
+  const news = [
+    ["Pengajian Rutin dan Silaturahmi Warga Nahdliyin", "Kegiatan Ranting", "Segera diperbarui", "https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=900&q=82"],
+    ["Bakti Sosial: Menguatkan Kepedulian dari Lingkungan Terdekat", "Sosial", "Segera diperbarui", "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=900&q=82"],
+    ["Koordinasi Pengurus untuk Program Khidmah Berkelanjutan", "Organisasi", "Segera diperbarui", "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=82"]
+  ];
+
+  document.title = "PRNU Karangsalam Kidul II | Merawat Tradisi, Menguatkan Khidmah";
+  app.innerHTML = `
+    <div class="landing-page">
+      <header class="landing-header">
+        <a class="landing-brand" href="#beranda" aria-label="PRNU Karangsalam Kidul II">
+          <img src="/logo-karangsalam-2.png" alt="Logo Karangsalam 2" />
+          <span><strong>PRNU</strong><small>Karangsalam Kidul II</small></span>
+        </a>
+        <button class="landing-menu" id="landingMenuButton" aria-expanded="false" aria-controls="landingNav">Menu</button>
+        <nav class="landing-nav" id="landingNav">
+          <a href="#beranda">Beranda</a><a href="#profil">Profil</a><a href="#program">Program</a>
+          <a href="#lembaga">Lembaga</a><a href="#berita">Berita</a><a href="#galeri">Galeri</a>
+          <a href="#donasi">Donasi</a><a href="#kontak">Kontak</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="landing-hero" id="beranda">
+          <div class="landing-hero-orb"></div>
+          <div class="landing-hero-content">
+            <p class="landing-kicker">Pengurus Ranting Nahdlatul Ulama</p>
+            <h1>Karangsalam<br /><em>Kidul II</em></h1>
+            <p class="landing-tagline">Merawat Tradisi, Menguatkan Khidmah, Membangun Umat</p>
+            <p class="landing-hero-copy">Bergerak bersama warga, menjaga amaliyah, dan menghadirkan manfaat dari lingkungan terdekat.</p>
+            <div class="landing-actions">
+              <a class="landing-button landing-button-gold" href="#program">Lihat Program</a>
+              <a class="landing-button landing-button-outline" href="#kontak">Hubungi Kami</a>
+            </div>
+          </div>
+          <aside class="landing-hero-card">
+            <img src="/logo-karangsalam-2.png" alt="Logo Karangsalam 2" />
+            <p>Khidmah Jam'iyyah</p>
+            <strong>Dari ranting,<br />untuk umat.</strong>
+          </aside>
+        </section>
+
+        <section class="landing-intro landing-section" id="profil">
+          <div><p class="landing-kicker">Tentang Kami</p><h2>Menjaga tradisi.<br /><span>Menyapa zaman.</span></h2></div>
+          <div>
+            <p>PRNU Karangsalam Kidul II hadir sebagai wadah khidmah jam'iyyah Nahdlatul Ulama dalam bidang dakwah, pendidikan, sosial, ekonomi umat, dan penguatan amaliyah Aswaja An-Nahdliyah.</p>
+            <a class="landing-text-link" href="#lembaga">Kenali gerakan kami <span>→</span></a>
+          </div>
+        </section>
+
+        <section class="landing-program-section landing-section" id="program">
+          <div class="landing-heading-row">
+            <div><p class="landing-kicker">Program Utama</p><h2>Khidmah yang tumbuh<br /><span>bersama warga.</span></h2></div>
+            <p>Lima arah gerak untuk menguatkan kehidupan berjamaah dan memberi manfaat yang terasa dekat.</p>
+          </div>
+          <div class="landing-program-grid">${programs.map(([icon, title, copy], index) => `
+            <article class="landing-program-card"><span>${String(index + 1).padStart(2, "0")}</span><b>${icon}</b><h3>${title}</h3><p>${copy}</p></article>
+          `).join("")}</div>
+        </section>
+
+        <section class="landing-institutions landing-section" id="lembaga">
+          <div class="landing-heading-row">
+            <div><p class="landing-kicker">Banom & Lembaga</p><h2>Berjalan beriringan,<br /><span>melayani bersama.</span></h2></div>
+          </div>
+          <div class="landing-institution-grid">${institutions.map(([title, copy]) => `<article><h3>${title}</h3><p>${copy}</p><span>Pelajari <b>→</b></span></article>`).join("")}</div>
+        </section>
+
+        <section class="landing-news landing-section" id="berita">
+          <div class="landing-heading-row">
+            <div><p class="landing-kicker">Berita Terbaru</p><h2>Kabar dari<br /><span>ranting.</span></h2></div>
+            <p>Catatan kegiatan dan gerak khidmah PRNU Karangsalam Kidul II.</p>
+          </div>
+          <div class="landing-news-grid">${news.map(([title, category, date, image]) => `
+            <article><img src="${image}" alt="${title}" loading="lazy" /><div><small>${category} · ${date}</small><h3>${title}</h3><a href="#kontak">Baca kabar <span>→</span></a></div></article>
+          `).join("")}</div>
+        </section>
+
+        <section class="landing-gallery landing-section" id="galeri">
+          <div><p class="landing-kicker">Galeri Khidmah</p><h2>Yang dikerjakan bersama,<br /><span>menjadi cerita bersama.</span></h2></div>
+          <div class="landing-gallery-grid">
+            <img src="https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=900&q=82" alt="Kegiatan pengajian" loading="lazy" />
+            <img src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=900&q=82" alt="Kegiatan sosial" loading="lazy" />
+            <img src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=82" alt="Koordinasi pengurus" loading="lazy" />
+          </div>
+        </section>
+
+        <section class="landing-donation landing-section" id="donasi">
+          <div>
+            <p class="landing-kicker">Koin NU & Donasi</p>
+            <h2>Sedikit demi sedikit,<br /><span>manfaat terus mengalir.</span></h2>
+            <p>Mari bersama menguatkan khidmah NU untuk umat melalui Koin NU dan donasi program sosial.</p>
+            <div class="landing-actions">
+              <a class="landing-button landing-button-gold" href="/transparansi">Lihat Transparansi Koin NU</a>
+              <a class="landing-button landing-button-outline" href="#kontak">Donasi Sekarang</a>
+            </div>
+          </div>
+          <div class="landing-donation-stat"><small>Gerakan bersama</small><strong>Koin NU</strong><span>Amanah · Terbuka · Berdampak</span></div>
+        </section>
+
+        <section class="landing-contact landing-section" id="kontak">
+          <div><p class="landing-kicker">Kontak Kami</p><h2>Mari terhubung<br /><span>dan berkhidmah.</span></h2></div>
+          <div class="landing-contact-grid">
+            <article><small>Alamat sekretariat</small><strong>PRNU Karangsalam Kidul II<br />Alamat lengkap akan dilengkapi</strong></article>
+            <article><small>Informasi</small><strong>WhatsApp pengurus akan dilengkapi<br />Email resmi akan dilengkapi</strong></article>
+            <article><small>Akses cepat</small><a href="https://www.google.com/maps/search/?api=1&query=Karangsalam+Kidul+Kedungbanteng+Banyumas" target="_blank" rel="noreferrer">Buka Google Maps →</a><a href="/login">Masuk sistem Koin NU →</a></article>
+          </div>
+        </section>
+      </main>
+
+      <footer class="landing-footer"><div class="landing-brand"><img src="/logo-karangsalam-2.png" alt="Logo Karangsalam 2" /><span><strong>PRNU</strong><small>Karangsalam Kidul II</small></span></div><p>Merawat Tradisi, Menguatkan Khidmah, Membangun Umat</p></footer>
+    </div>`;
+
+  document.querySelector("#landingMenuButton")?.addEventListener("click", (event) => {
+    const expanded = event.currentTarget.getAttribute("aria-expanded") === "true";
+    event.currentTarget.setAttribute("aria-expanded", String(!expanded));
+    document.querySelector("#landingNav")?.classList.toggle("open", !expanded);
+  });
+  document.querySelectorAll(".landing-nav a").forEach((link) => link.addEventListener("click", () => {
+    document.querySelector("#landingMenuButton")?.setAttribute("aria-expanded", "false");
+    document.querySelector("#landingNav")?.classList.remove("open");
+  }));
+}
+
 function render() {
   const path = window.location.pathname;
   if (path === "/publik" || path === "/transparansi") {
     renderPublicDashboard();
     return;
   }
-  if (path === "/" || path === "/login") {
+  if (path === "/") {
+    renderLandingPage();
+    return;
+  }
+  if (path === "/login") {
     renderLogin();
     return;
   }

@@ -5,3 +5,7 @@ dist/
 .env.local
 .env.*.local
 .edge-audit/
+.tools/
+github-login.ps1
+github-publish.ps1
+_gitmeta/
