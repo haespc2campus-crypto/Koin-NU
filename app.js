@@ -6200,7 +6200,8 @@ function renderLandingPage() {
             <p class="landing-kicker">Pengurus Ranting Nahdlatul Ulama</p>
             <h1>Karangsalam<br /><em>Kidul II</em></h1>
             <p class="landing-tagline">Merawat Tradisi, Menguatkan Khidmah, Membangun Umat</p>
-            <p class="landing-hero-copy">Bergerak bersama warga, menjaga amaliyah, dan menghadirkan manfaat dari lingkungan terdekat.</p>
+            <p class="landing-hero-copy">Bergerak bersama warga, menjaga amaliyah, menata layanan, dan menghadirkan manfaat dari lingkungan terdekat dengan wajah organisasi yang rapi, amanah, dan terbuka.</p>
+            <div class="landing-badges"><span>Aswaja</span><span>Khidmah</span><span>Transparan</span></div>
             <div class="landing-actions">
               <a class="landing-button landing-button-gold" href="#program">Lihat Program</a>
               <a class="landing-button landing-button-outline" href="#kontak">Hubungi Kami</a>
