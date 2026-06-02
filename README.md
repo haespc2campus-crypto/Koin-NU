@@ -6,9 +6,23 @@ Tagline: **Transparan, Amanah, dan Berdampak**
 
 SIKOINNU membantu ranting NU mengelola donatur, pengambilan koin, setoran petugas, setoran ke LAZISNU, penyaluran dana, laporan, dan transparansi publik.
 
-## Mode Demo
+## Mode Database
 
-Jika Supabase belum dikonfigurasi, aplikasi otomatis berjalan dalam mode demo. Buka halaman login, isi email dan password bebas, lalu pilih role demo.
+Aplikasi berjalan dengan server Fastify (`fastify-server.js`). Legacy fallback tersedia via `npm run start:legacy`.
+
+- Jika `DATABASE_URL` diisi → memakai PostgreSQL.
+- Jika `DATABASE_URL` kosong → fallback database JSON lokal (`data/db.json`).
+
+Akun awal dibuat otomatis:
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin@rantingnu.id` | `admin123` |
+| Bendahara | `bendahara@rantingnu.id` | `bendahara123` |
+| Petugas | `petugas@rantingnu.id` | `petugas123` |
+| Pengurus | `pengurus@rantingnu.id` | `pengurus123` |
+
+Ganti password/akun demo sebelum produksi.
 
 ## Menjalankan Lokal
 
@@ -21,92 +35,61 @@ npm run dev
 
 Buka `http://localhost:5173`.
 
-## Environment
+## Environment Server
 
 File [.env.example](./.env.example) tersedia sebagai contoh:
 
 ```env
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
+PORT=5173
+DATABASE_URL=postgres://koin_nu_user:***@localhost:5432/koin_nu
+DATA_DIR=data
+UPLOADS_DIR=uploads
+SESSION_TTL_MS=43200000
+MAX_BODY_BYTES=2097152
 ```
 
-Untuk pengembangan lokal:
+Catatan keamanan:
 
-1. Salin `.env.example` menjadi `.env.local`.
-2. Isi URL project dan anon key Supabase.
-3. Jangan commit `.env.local`. File tersebut sudah masuk `.gitignore`.
-
-Catatan: `npm run dev` membaca `supabase-config.js` dari root. Untuk menguji login asli pada server lokal, isi file tersebut secara manual. `npm run build` membaca `.env.local` dan menghasilkan `dist/supabase-config.js`.
-
-## Setup Supabase
-
-Checklist setup database baru:
-
-- [ ] Buat project Supabase.
-- [ ] Jalankan [supabase-schema.sql](./supabase-schema.sql) di SQL Editor.
-- [ ] Isi `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY`.
-- [ ] Buat admin pertama melalui Supabase Auth dan tabel `profiles`.
-- [ ] Test login asli melalui `/login`.
-
-Untuk database lama, jalankan migrasi tambahan:
-
-- [supabase-storage-migration.sql](./supabase-storage-migration.sql) untuk upload foto.
-- [supabase-setoran-migration.sql](./supabase-setoran-migration.sql) untuk modul setoran baru.
-
-Panduan lebih lengkap tersedia di [SUPABASE_SETUP.md](./SUPABASE_SETUP.md).
+- `DATABASE_URL` mengaktifkan PostgreSQL.
+- Jika memakai fallback lokal, `DATA_DIR` menyimpan `db.json`; backup rutin.
+- `UPLOADS_DIR` menyimpan file publik `/uploads/*`; jangan arahkan ke folder kode.
+- `SESSION_TTL_MS` minimum 30 menit.
+- `MAX_BODY_BYTES` dibatasi 64KB sampai 10MB.
+- Jangan commit `.env.local`, `data/`, `uploads/`, atau backup database.
 
 ## Build Produksi
 
 ```bash
-npm run typecheck
+npm run lint
+npm run test:smoke
+npm run test:smoke:fastify
 npm run build
 ```
 
-Folder `dist` adalah output siap deploy. Folder ini berisi aplikasi static, konfigurasi Supabase hasil build, logo LAZISNU, stylesheet, dan JavaScript aplikasi.
+Folder `dist` berisi aset static. Untuk fitur API/login/upload, jalankan server Node.js (`npm start`). Deploy static-only tidak mendukung API internal.
 
-## Deploy Vercel
+## Deploy Node.js
 
-Cara paling sederhana untuk pemula:
-
-1. Simpan proyek ini di repository GitHub.
-2. Buka [vercel.com](https://vercel.com) dan pilih **Add New > Project**.
-3. Import repository GitHub.
-4. Tambahkan environment variables:
-
-```env
-VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
-
-5. Klik **Deploy**.
-6. Setelah selesai, buka `/login` dan `/transparansi`.
-
-File [vercel.json](./vercel.json) sudah mengatur perintah build, folder output `dist`, dan route SPA.
-
-## Deploy Netlify
-
-1. Simpan proyek ini di repository GitHub.
-2. Buka [app.netlify.com](https://app.netlify.com) dan pilih **Add new site > Import an existing project**.
-3. Import repository GitHub.
-4. Tambahkan environment variables:
-
-```env
-VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
-
-5. Klik **Deploy site**.
-6. Setelah selesai, buka `/login` dan `/transparansi`.
-
-File [netlify.toml](./netlify.toml) sudah mengatur perintah build, folder publish `dist`, dan route SPA.
+1. Install dependency: `npm ci`.
+2. Salin `.env.example` ke `.env.local` / env platform.
+3. Set `DATABASE_URL` PostgreSQL Rizquna dan `UPLOADS_DIR` persisten.
+4. Jalankan validasi: `npm run lint && npm run test:smoke && npm run test:smoke:fastify`.
+5. Start: `PORT=5173 npm start`.
+6. Pasang reverse proxy HTTPS (Nginx/Caddy/Cloudflare Tunnel) di depan Node.
+7. Pastikan `/api/db`, `/login`, `/transparansi`, dan upload foto berfungsi.
 
 ## Checklist Produksi
 
-- [ ] Supabase project sudah dibuat.
-- [ ] SQL schema sudah dijalankan.
-- [ ] Env Supabase sudah diisi pada platform deploy.
-- [ ] Admin pertama sudah dibuat.
-- [ ] Login asli berhasil.
+- [ ] `npm run lint && npm run test:smoke && npm run test:smoke:fastify` lulus.
+- [ ] `.env.local` tidak masuk Git.
+- [ ] `DATABASE_URL` PostgreSQL aktif, atau `DATA_DIR` fallback memakai storage persisten.
+- [ ] Akun/password demo diganti atau dinonaktifkan.
+- [ ] HTTPS aktif melalui reverse proxy.
+- [ ] Backup PostgreSQL dijadwalkan.
+- [ ] Permission filesystem dibatasi untuk user proses Node.
+- [ ] Public `/api/db` tidak menampilkan data sensitif.
+- [ ] Public `/api/table/profiles` menghasilkan `403`.
+- [ ] Login role admin/bendahara/petugas/pengurus diuji.
 - [ ] Dashboard internal berhasil dibuka.
 - [ ] Dashboard publik `/transparansi` berhasil dibuka.
 - [ ] Logo LAZISNU tampil normal.

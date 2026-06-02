@@ -4,15 +4,36 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node server.js",
-    "build": "node build.js",
-    "typecheck": "node --check app.js && node --check build.js && node --check server.js",
+    "dev": "vite --host 0.0.0.0",
+    "dev:server": "node fastify-server.js",
+    "build": "vite build && node build.js --server-assets-only",
+    "typecheck": "node --check app.js && node --check build.js && node --check server.js && node --check scripts/smoke-security.mjs && node --check scripts/smoke-fastify.mjs && node --check scripts/smoke-argon2.mjs && node --check scripts/check-postgres.mjs && node --check scripts/seed-admin.mjs && node --check scripts/reset-password.mjs && node --check fastify-server.js && node --check src/server/app.js && node --check src/server/config.js && node --check src/server/password.js && node --check src/server/core.js && node --check src/server/routes.js && node --check src/server/validation.js && node --check src/server/schema.js && node --check src/server/postgres-store.js",
     "lint": "npm run typecheck",
-    "preview": "node server.js"
+    "test:smoke": "node scripts/smoke-security.mjs",
+    "test:smoke:fastify": "node scripts/smoke-fastify.mjs",
+    "test:smoke:argon2": "node scripts/smoke-argon2.mjs",
+    "db:check": "node scripts/check-postgres.mjs",
+    "seed:admin": "node scripts/seed-admin.mjs",
+    "reset:password": "node scripts/reset-password.mjs",
+    "preview": "vite preview --host 0.0.0.0",
+    "start": "node fastify-server.js",
+    "start:fastify": "node fastify-server.js",
+    "start:legacy": "node server.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0",
+    "@fastify/cors": "^11.2.0",
+    "@fastify/helmet": "^13.0.2",
+    "@fastify/static": "^9.1.3",
+    "@floating-ui/dom": "^1.7.6",
+    "argon2": "^0.44.0",
+    "drizzle-orm": "^0.45.2",
+    "fastify": "^5.8.5",
     "html5-qrcode": "^2.3.8",
-    "qrcode-generator": "^2.0.4"
+    "micromodal": "^0.6.2",
+    "nanoid": "^5.1.11",
+    "pg": "^8.21.0",
+    "qrcode-generator": "^2.0.4",
+    "vite": "^8.0.16",
+    "zod": "^4.4.3"
   }
 }

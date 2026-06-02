@@ -1,5 +1,18 @@
+import qrcode from "qrcode-generator";
+import MicroModal from "micromodal";
+import { z } from "zod";
+import { nanoid } from "nanoid";
+import { changePasswordSchema } from "./src/lib/validators.js";
+import { initModals } from "./src/ui/modal.js";
+
+window.qrcode = qrcode;
+window.MicroModal = MicroModal;
+window.z = z;
+window.nanoid = nanoid;
+initModals();
+
 const sessionKey = "koin-nu-demo-session";
-const authSessionKey = "koin-nu-supabase-auth-session";
+const authSessionKey = "koin-nu-postgres-auth-session";
 const roles = ["admin", "bendahara", "petugas", "pengurus"];
 
 const app = document.querySelector("#app");
@@ -88,6 +101,11 @@ const demoData = {
     { id: 503, title: "Bakti Sosial Warga", category: "Bakti Sosial", date: "2026-05-20", photoName: "bakti-sosial.jpg", photoUrl: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=900&q=80" },
     { id: 504, title: "Koordinasi Pengurus Ranting", category: "Kegiatan Ranting", date: "2026-05-16", photoName: "koordinasi-ranting.jpg", photoUrl: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=80" }
   ],
+  news: [
+    { id: 801, title: "Pengajian Rutin dan Silaturahmi Warga Nahdliyin", category: "Kegiatan Ranting", date: "2026-05-26", excerpt: "Majelis rutin menjadi ruang silaturahmi, ngaji, dan penguatan amaliyah warga.", content: "Pengajian rutin PRNU Karangsalam Kidul II digelar bersama warga sebagai ikhtiar merawat tradisi, memperkuat ukhuwah, dan menghidupkan amaliyah Aswaja An-Nahdliyah di lingkungan ranting.", imageName: "pengajian-rutin.jpg", imageUrl: "https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=900&q=82", status: "published" },
+    { id: 802, title: "Bakti Sosial: Menguatkan Kepedulian dari Lingkungan Terdekat", category: "Sosial", date: "2026-05-20", excerpt: "Gerakan sosial warga diarahkan untuk membantu kebutuhan sekitar secara gotong royong.", content: "Bakti sosial dilaksanakan sebagai wujud khidmah warga NU. Kegiatan ini mengajak jamaah bergerak bersama membantu sesama dari lingkungan terdekat.", imageName: "bakti-sosial.jpg", imageUrl: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=900&q=82", status: "published" },
+    { id: 803, title: "Koordinasi Pengurus untuk Program Khidmah Berkelanjutan", category: "Organisasi", date: "2026-05-16", excerpt: "Pengurus merapikan agenda dakwah, sosial, dan digitalisasi layanan ranting.", content: "Koordinasi pengurus dilakukan untuk menata program kerja, pembagian tugas, dan tindak lanjut layanan umat agar khidmah berjalan lebih rapi dan berkelanjutan.", imageName: "koordinasi-ranting.jpg", imageUrl: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=82", status: "published" }
+  ],
   officers: [
     { id: 301, name: "Ahmad Fauzi", phone: "0812-7000-0101", address: "Jl. Masjid Al-Hikmah No. 4", rt: "01", rw: "03", area: "RT 01/RW 03, RT 04/RW 04, RT 05/RW 04", donorCount: 4, username: "petugas@rantingnu.id", role: "petugas", active: true, note: "Petugas demo utama." },
     { id: 302, name: "Siti Aminah", phone: "0857-7000-0202", address: "Gang Melati Tengah", rt: "02", rw: "03", area: "RT 02/RW 03, RT 06/RW 05", donorCount: 2, username: "siti@rantingnu.id", role: "petugas", active: true, note: "Koordinator area musholla." },
@@ -160,6 +178,7 @@ const appState = {
   officerDeposits: [...demoData.officerDeposits],
   lazisnuDeposits: [...demoData.lazisnuDeposits],
   publicDocumentation: [...demoData.publicDocumentation],
+  news: [...demoData.news],
   pickups: demoData.pickups.map((pickup) => ({
     ...pickup,
     verificationAudit: pickup.status === "Menunggu Verifikasi" ? [] : [{
@@ -233,6 +252,7 @@ const appState = {
   selectedBoardId: null,
   boardModalMode: null,
   settingsEditMode: false,
+  passwordEditMode: false,
   users: [
     { id: "demo-admin", email: "admin@rantingnu.id", fullName: "Admin Ranting", role: "admin", phone: "0812-9000-1111", status: "aktif", createdAt: "2026-05-01T08:00:00.000Z" },
     { id: "demo-bendahara", email: "bendahara@rantingnu.id", fullName: "Hj. Lailatul Badriyah", role: "bendahara", phone: "0881-8100-0505", status: "aktif", createdAt: "2026-05-01T08:10:00.000Z" },
@@ -245,328 +265,41 @@ const appState = {
   selectedUserId: null,
   userModalMode: null,
   dataSource: "demo",
-  supabaseReady: false
+  postgresReady: false
 };
 
-function getSupabaseConfig() {
-  const config = window.KOIN_NU_SUPABASE_CONFIG || {};
-  return {
-    url: (config.url || "").replace(/\/$/, ""),
-    anonKey: config.anonKey || ""
-  };
-}
-
-function hasSupabaseConfig() {
-  const config = getSupabaseConfig();
-  return Boolean(config.url && config.anonKey);
-}
-
-async function supabaseRequest(path, options = {}) {
-  const config = getSupabaseConfig();
-  const auth = getAuthSession();
-  if (!config.url || !config.anonKey) {
-    throw new Error("Supabase config belum diisi.");
-  }
-
-  const response = await fetch(`${config.url}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      apikey: config.anonKey,
-      Authorization: `Bearer ${auth?.access_token || config.anonKey}`,
-      "Content-Type": "application/json",
-      Prefer: "return=representation,resolution=merge-duplicates",
-      ...(options.headers || {})
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(`Supabase ${response.status}: ${await response.text()}`);
-  }
-
-  if (response.status === 204) {
-    return null;
-  }
-
-  return response.json();
-}
-
-const privateEvidenceBucket = "koin-nu-private-evidence";
-const publicDocumentationBucket = "koin-nu-public-documentation";
-const allowedImageTypes = ["image/jpeg", "image/png", "image/webp"];
-const allowedImageExtensions = ["jpg", "jpeg", "png", "webp"];
-const maxImageSize = 2 * 1024 * 1024;
-
-function validateImageFile(file) {
-  if (!file) {
-    return "";
-  }
-  const extension = file.name.split(".").pop()?.toLowerCase() || "";
-  if (!allowedImageExtensions.includes(extension) || !allowedImageTypes.includes(file.type)) {
-    return "Format foto harus JPG, PNG, atau WEBP.";
-  }
-  if (file.size > maxImageSize) {
-    return "Ukuran foto maksimal 2 MB.";
-  }
-  return "";
-}
-
-function sanitizeStorageName(name) {
-  return name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-+|-+$/g, "");
-}
-
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("Preview foto gagal dibuat."));
-    reader.readAsDataURL(file);
-  });
-}
-
-async function uploadDocumentationPhoto(file, folder) {
-  const validationError = validateImageFile(file);
-  if (validationError) {
-    throw new Error(validationError);
-  }
-  if (!file) {
-    return null;
-  }
-
-  if (!hasSupabaseConfig() || !getAuthSession()) {
-    return {
-      name: file.name,
-      url: await fileToDataUrl(file)
-    };
-  }
-
-  const config = getSupabaseConfig();
-  const auth = getAuthSession();
-  const path = `${folder}/${Date.now()}-${sanitizeStorageName(file.name)}`;
-  const isPublicDocumentation = ["kegiatan-publik", "pengurus"].includes(folder);
-  const bucket = isPublicDocumentation ? publicDocumentationBucket : privateEvidenceBucket;
-  const response = await fetch(`${config.url}/storage/v1/object/${bucket}/${path}`, {
-    method: "POST",
-    headers: {
-      apikey: config.anonKey,
-      Authorization: `Bearer ${auth.access_token}`,
-      "Content-Type": file.type,
-      "x-upsert": "true"
-    },
-    body: file
-  });
-
-  if (!response.ok) {
-    throw new Error(`Upload foto gagal: ${await response.text()}`);
-  }
-
-  return {
-    name: file.name,
-    path,
-    url: isPublicDocumentation
-      ? `${config.url}/storage/v1/object/public/${bucket}/${path}`
-      : await createSignedPhotoUrl(bucket, path)
-  };
-}
-
-async function createSignedPhotoUrl(bucket, path) {
-  if (!path || !hasSupabaseConfig() || !getAuthSession()) {
-    return "";
-  }
-  const config = getSupabaseConfig();
-  const auth = getAuthSession();
-  const response = await fetch(`${config.url}/storage/v1/object/sign/${bucket}/${path}`, {
-    method: "POST",
-    headers: {
-      apikey: config.anonKey,
-      Authorization: `Bearer ${auth.access_token}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ expiresIn: 3600 })
-  });
-  if (!response.ok) {
-    return "";
-  }
-  const data = await response.json();
-  return data.signedURL ? `${config.url}/storage/v1${data.signedURL}` : "";
-}
-
-async function hydratePrivatePhotoUrls() {
-  if (!hasSupabaseConfig() || !getAuthSession()) {
-    return;
-  }
-  await Promise.all(appState.pickups.map(async (pickup) => {
-    if (pickup.proofPhotoPath) {
-      pickup.proofPhotoUrl = await createSignedPhotoUrl(privateEvidenceBucket, pickup.proofPhotoPath);
-    }
-    await Promise.all((pickup.verificationAudit || []).map(async (audit) => {
-      if (audit.depositPhotoPath) {
-        audit.depositPhotoUrl = await createSignedPhotoUrl(privateEvidenceBucket, audit.depositPhotoPath);
-      }
-    }));
-  }));
-  await Promise.all(appState.distributions.map(async (item) => {
-    if (item.documentationPath) {
-      item.documentationUrl = await createSignedPhotoUrl(privateEvidenceBucket, item.documentationPath);
-    }
-  }));
-  await Promise.all([...appState.officerDeposits, ...appState.lazisnuDeposits].map(async (item) => {
-    if (item.proofPhotoPath) {
-      item.proofPhotoUrl = await createSignedPhotoUrl(privateEvidenceBucket, item.proofPhotoPath);
-    }
-  }));
-}
-
-function renderPhotoPreview(url, alt, emptyText = "Belum ada foto.") {
-  return url
-    ? `<figure class="photo-preview"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(alt)}</figcaption></figure>`
-    : `<div class="photo-empty">${emptyText}</div>`;
-}
-
-function getNameInitials(name = "") {
-  return String(name)
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase() || "?";
-}
-
-function isDisplayablePhotoUrl(url = "") {
-  return /^(https?:\/\/|data:image\/|blob:|\/)/i.test(String(url).trim());
-}
-
-function renderBoardAvatar(member, size = "") {
-  const name = member?.name || "Pengurus";
-  const photo = isDisplayablePhotoUrl(member?.photo) ? String(member.photo).trim() : "";
-  return `
-    <span class="board-avatar ${size}" aria-label="Foto ${escapeHtml(name)}">
-      <span class="board-avatar-fallback">${escapeHtml(getNameInitials(name))}</span>
-      ${photo ? `<img src="${escapeHtml(photo)}" alt="Foto ${escapeHtml(name)}" loading="lazy" onerror="this.remove()" />` : ""}
-    </span>
-  `;
-}
-
-function renderBoardPhotoPreview(member) {
-  return `
-    <div class="board-photo-preview">
-      ${renderBoardAvatar(member, "large")}
-      <span>${member?.photo && isDisplayablePhotoUrl(member.photo) ? "Foto pengurus saat ini" : "Avatar inisial digunakan jika foto belum tersedia."}</span>
-    </div>
-  `;
-}
-
-function bindImagePreview(inputSelector, previewSelector, errorSelector) {
-  document.querySelector(inputSelector)?.addEventListener("change", (event) => {
-    const file = event.target.files?.[0];
-    const preview = document.querySelector(previewSelector);
-    const error = document.querySelector(errorSelector);
-    const message = validateImageFile(file);
-    if (error) {
-      error.textContent = message;
-    }
-    if (!preview || !file || message) {
-      if (message) event.target.value = "";
-      return;
-    }
-    preview.innerHTML = renderPhotoPreview(URL.createObjectURL(file), file.name);
-  });
-}
-
-function getAuthSession() {
-  try {
-    return JSON.parse(localStorage.getItem(authSessionKey));
-  } catch {
-    return null;
-  }
-}
-
-function setAuthSession(session) {
-  localStorage.setItem(authSessionKey, JSON.stringify(session));
-}
-
-function clearAuthSession() {
-  localStorage.removeItem(authSessionKey);
-}
-
-function isSupabaseSessionValid(session) {
-  return Boolean(session?.access_token && (!session.expires_at || session.expires_at * 1000 > Date.now() + 30000));
-}
-
-async function supabaseAuthRequest(path, options = {}) {
-  const config = getSupabaseConfig();
-  if (!config.url || !config.anonKey) {
-    throw new Error("Supabase Auth belum dikonfigurasi.");
-  }
-
-  const auth = getAuthSession();
-  const response = await fetch(`${config.url}/auth/v1/${path}`, {
-    ...options,
-    headers: {
-      apikey: config.anonKey,
-      "Content-Type": "application/json",
-      ...(auth?.access_token ? { Authorization: `Bearer ${auth.access_token}` } : {}),
-      ...(options.headers || {})
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(await response.text());
-  }
-
+function getPostgresConfig() { return { url: '', anonKey: '' }; }
+function hasPostgresConfig() { return false; }
+function getAuthSession() { return getSession(); }
+function setAuthSession(session) { setSession(session); }
+function clearAuthSession() {}
+function isPostgresSessionValid(session) { return Boolean(session?.token); }
+function getApiToken() { return getSession()?.token || ''; }
+async function internalRequest(path, options = {}) {
+  const response = await fetch(`/api/${path}`, { ...options, headers: { 'Content-Type': 'application/json', ...(getApiToken() ? { Authorization: `Bearer ${getApiToken()}` } : {}), ...(options.headers || {}) } });
+  if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `API ${response.status}`);
   return response.status === 204 ? null : response.json();
 }
-
-async function fetchProfileForAuthUser(authUser) {
-  const rows = await supabaseRequest(`profiles?select=*&id=eq.${encodeURIComponent(authUser.id)}&limit=1`);
-  const profile = rows?.[0];
-  if (!profile || profile.status === "tidak_aktif") {
-    throw new Error("Akun belum aktif atau profil belum dibuat.");
-  }
-
-  return {
-    id: authUser.id,
-    email: profile.email || authUser.email,
-    name: profile.full_name || authUser.email,
-    role: profile.role,
-    phone: profile.phone || "",
-    authProvider: "supabase",
-    loggedInAt: new Date().toISOString()
-  };
-}
-
-async function restoreSupabaseSession() {
-  if (!hasSupabaseConfig()) {
-    return null;
-  }
-
-  let auth = getAuthSession();
-  if (!auth) {
-    return null;
-  }
-
-  try {
-    if (!isSupabaseSessionValid(auth) && auth.refresh_token) {
-      auth = await supabaseAuthRequest("token?grant_type=refresh_token", {
-        method: "POST",
-        body: JSON.stringify({ refresh_token: auth.refresh_token })
-      });
-      setAuthSession(auth);
-    }
-
-    const userData = await supabaseAuthRequest("user");
-    const appSession = await fetchProfileForAuthUser(userData);
-    setSession(appSession);
-    return appSession;
-  } catch (error) {
-    console.warn("Session Supabase tidak valid, logout lokal.", error);
-    clearAuthSession();
-    clearSession();
-    return null;
-  }
-}
-
+const privateEvidenceBucket = 'local-private-evidence';
+const publicDocumentationBucket = 'local-public-documentation';
+const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
+const allowedImageExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+const maxImageSize = 2 * 1024 * 1024;
+function validateImageFile(file) { if (!file) return ''; const extension = file.name.split('.').pop()?.toLowerCase() || ''; if (!allowedImageExtensions.includes(extension) || !allowedImageTypes.includes(file.type)) return 'Format foto harus JPG, PNG, atau WEBP.'; if (file.size > maxImageSize) return 'Ukuran foto maksimal 2 MB.'; return ''; }
+function sanitizeStorageName(name) { return name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/^-+|-+$/g, ''); }
+function fileToDataUrl(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error('Preview foto gagal dibuat.')); reader.readAsDataURL(file); }); }
+async function uploadDocumentationPhoto(file, folder = "dokumentasi") { const validationError = validateImageFile(file); if (validationError) throw new Error(validationError); if (!file) return null; const dataUrl = await fileToDataUrl(file); return internalRequest("upload", { method: "POST", body: JSON.stringify({ name: file.name, type: file.type, folder, dataUrl }) }); }
+async function createSignedPhotoUrl(bucket, path) { return path || ''; }
+async function hydratePrivatePhotoUrls() {}
+function renderPhotoPreview(url, alt, emptyText = 'Belum ada foto.') { return url ? `<figure class="photo-preview"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(alt)}</figcaption></figure>` : `<div class="photo-empty">${emptyText}</div>`; }
+function getNameInitials(name = '') { return String(name).trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || '?'; }
+function isDisplayablePhotoUrl(url = '') { return /^(https?:\/\/|data:image\/|blob:|\/)/i.test(String(url).trim()); }
+function renderBoardAvatar(member, size = '') { const name = member?.name || 'Pengurus'; const photo = isDisplayablePhotoUrl(member?.photo) ? String(member.photo).trim() : ''; return `<span class="board-avatar ${size}" aria-label="Foto ${escapeHtml(name)}"><span class="board-avatar-fallback">${escapeHtml(getNameInitials(name))}</span>${photo ? `<img src="${escapeHtml(photo)}" alt="Foto ${escapeHtml(name)}" loading="lazy" onerror="this.remove()" />` : ''}</span>`; }
+function renderBoardPhotoPreview(member) { return `<div class="board-photo-preview">${renderBoardAvatar(member, 'large')}<span>${member?.photo && isDisplayablePhotoUrl(member.photo) ? 'Foto pengurus saat ini' : 'Avatar inisial digunakan jika foto belum tersedia.'}</span></div>`; }
+function bindImagePreview(inputSelector, previewSelector, errorSelector) { document.querySelector(inputSelector)?.addEventListener('change', (event) => { const file = event.target.files?.[0]; const preview = document.querySelector(previewSelector); const error = document.querySelector(errorSelector); const message = validateImageFile(file); if (error) error.textContent = message; if (!preview || !file || message) { if (message) event.target.value = ''; return; } preview.innerHTML = renderPhotoPreview(URL.createObjectURL(file), file.name); }); }
+async function postgresAuthRequest() { throw new Error('Reset password belum tersedia di auth internal.'); }
+async function fetchProfileForAuthUser(authUser) { return authUser; }
+async function restorePostgresSession() { const session = getSession(); if (session?.token) await loadInternalData(); return session; }
 function mapStatusToActive(status) {
   return status === true || status === "aktif" || status === "active";
 }
@@ -746,6 +479,18 @@ function mapDbToAppState(data) {
     photoName: item.foto_nama || "",
     photoUrl: item.foto_url || ""
   }));
+  appState.news = (data.berita?.length ? data.berita : demoData.news).map((item) => ({
+    id: item.id,
+    title: item.judul || item.title || "",
+    category: item.kategori || item.category || "Kegiatan Ranting",
+    date: item.tanggal || item.date || getLocalDateString(),
+    excerpt: item.ringkasan || item.excerpt || "",
+    content: item.konten || item.content || "",
+    imagePath: item.gambar_path || item.imagePath || "",
+    imageName: item.gambar_nama || item.imageName || "",
+    imageUrl: item.gambar_url || item.imageUrl || "",
+    status: item.status || "draft"
+  }));
   appState.boardMembers = (data.pengurus || []).map((item) => ({
     id: item.id,
     position: item.jabatan,
@@ -758,24 +503,17 @@ function mapDbToAppState(data) {
   }));
 }
 
-async function loadSupabaseData() {
-  if (!hasSupabaseConfig()) {
-    appState.dataSource = "demo";
-    return;
-  }
-
+async function loadInternalData() {
   try {
-    const tables = ["profiles", "ranting_profile", "pengurus", "petugas", "donatur", "pengambilan_koin", "verifikasi_setoran", "setoran_petugas", "setoran_lazisnu", "penyaluran_dana", "dokumentasi_kegiatan", "settings"];
-    const results = await Promise.all(tables.map((table) => supabaseRequest(`${table}?select=*`)));
-    const data = Object.fromEntries(tables.map((table, index) => [table, results[index] || []]));
+    const data = await internalRequest("db");
     mapDbToAppState(data);
     await hydratePrivatePhotoUrls();
-    appState.dataSource = "supabase";
-    appState.supabaseReady = true;
+    appState.dataSource = "internal";
+    appState.postgresReady = true;
   } catch (error) {
-    console.warn("Gagal memuat Supabase, memakai mode demo.", error);
+    console.warn("Gagal memuat database internal, memakai mode demo.", error);
     appState.dataSource = "demo";
-    appState.supabaseReady = false;
+    appState.postgresReady = false;
   }
 }
 
@@ -916,6 +654,21 @@ function toDbRows(table) {
     }));
   }
 
+  if (table === "berita") {
+    return appState.news.map((item) => ({
+      id: item.id,
+      judul: item.title,
+      kategori: item.category,
+      tanggal: item.date,
+      ringkasan: item.excerpt,
+      konten: item.content,
+      gambar_path: item.imagePath || null,
+      gambar_url: item.imageUrl,
+      gambar_nama: item.imageName,
+      status: item.status || "draft"
+    }));
+  }
+
   if (table === "profiles") {
     return appState.users.map((item) => ({
       id: item.id,
@@ -930,8 +683,8 @@ function toDbRows(table) {
   return [];
 }
 
-async function syncTableToSupabase(table) {
-  if (!appState.supabaseReady) {
+async function syncTableToPostgres(table) {
+  if (!appState.postgresReady) {
     return;
   }
 
@@ -941,25 +694,19 @@ async function syncTableToSupabase(table) {
   }
 
   try {
-    await supabaseRequest(table, {
-      method: "POST",
-      headers: { Prefer: "resolution=merge-duplicates" },
-      body: JSON.stringify(rows)
-    });
+    await internalRequest(`table/${table}`, { method: "POST", body: JSON.stringify(rows) });
   } catch (error) {
     console.warn(`Gagal sinkron ${table}`, error);
   }
 }
 
-async function deleteRowFromSupabase(table, id) {
-  if (!appState.supabaseReady || id === null || id === undefined) {
+async function deleteRowFromPostgres(table, id) {
+  if (!appState.postgresReady || id === null || id === undefined) {
     return true;
   }
 
   try {
-    await supabaseRequest(`${table}?id=eq.${encodeURIComponent(id)}`, {
-      method: "DELETE"
-    });
+    await internalRequest(`table/${table}/${encodeURIComponent(id)}`, { method: "DELETE" });
     return true;
   } catch (error) {
     console.warn(`Gagal menghapus ${table}`, error);
@@ -967,12 +714,12 @@ async function deleteRowFromSupabase(table, id) {
   }
 }
 
-async function syncVerificationAuditToSupabase(pickupId, audit, session) {
-  if (!appState.supabaseReady) {
+async function syncVerificationAuditToPostgres(pickupId, audit, session) {
+  if (!appState.postgresReady) {
     return;
   }
   try {
-    await supabaseRequest("verifikasi_setoran", {
+    await internalRequest("table/verifikasi_setoran", {
       method: "POST",
       body: JSON.stringify([{
         pengambilan_id: pickupId,
@@ -990,16 +737,15 @@ async function syncVerificationAuditToSupabase(pickupId, audit, session) {
   }
 }
 
-async function syncProfileToSupabase() {
-  if (!appState.supabaseReady) {
+async function syncProfileToPostgres() {
+  if (!appState.postgresReady) {
     return;
   }
 
   const profile = appState.branchProfile;
   try {
-    await supabaseRequest("ranting_profile", {
+    await internalRequest("table/ranting_profile", {
       method: "POST",
-      headers: { Prefer: "resolution=merge-duplicates" },
       body: JSON.stringify([{
         id: 1,
         nama_ranting: profile.branchName,
@@ -1019,8 +765,8 @@ async function syncProfileToSupabase() {
   }
 }
 
-async function syncSettingsToSupabase() {
-  if (!appState.supabaseReady) {
+async function syncSettingsToPostgres() {
+  if (!appState.postgresReady) {
     return;
   }
 
@@ -1033,9 +779,8 @@ async function syncSettingsToSupabase() {
   }));
 
   try {
-    await supabaseRequest("settings", {
+    await internalRequest("table/settings", {
       method: "POST",
-      headers: { Prefer: "resolution=merge-duplicates" },
       body: JSON.stringify(rows)
     });
   } catch (error) {
@@ -1100,6 +845,7 @@ const navigationItems = [
   { label: "Setoran Petugas", path: "/setoran-petugas", icon: "coin" },
   { label: "Setor ke LAZISNU", path: "/setor-lazisnu", icon: "report" },
   { label: "Penyaluran Dana", path: "/penyaluran-dana", icon: "report" },
+  { label: "Berita", path: "/berita", icon: "report" },
   { label: "Laporan", path: "/laporan", icon: "report" },
   { label: "Kelola User", path: "/users", icon: "users" },
   { label: "Pengaturan", path: "/pengaturan", icon: "check" }
@@ -1122,11 +868,11 @@ function clearSession() {
 }
 
 async function logout() {
-  if (hasSupabaseConfig() && getAuthSession()) {
+  if (getSession()?.token) {
     try {
-      await supabaseAuthRequest("logout", { method: "POST" });
+      await internalRequest("logout", { method: "POST" });
     } catch (error) {
-      console.warn("Logout Supabase gagal, session lokal tetap dibersihkan.", error);
+      console.warn("Logout server gagal, session lokal tetap dibersihkan.", error);
     }
   }
   clearAuthSession();
@@ -1135,6 +881,10 @@ async function logout() {
 
 function isReadOnlyRole(role) {
   return role === "pengurus";
+}
+
+function canManagePublicContent(role) {
+  return role === "admin" || role === "bendahara" || role === "pengurus";
 }
 
 function canManageUsers(role) {
@@ -1155,7 +905,7 @@ function canAccessPath(session, path) {
   }
 
   if (session.role === "pengurus") {
-    return ["/dashboard", "/profil-ranting", "/pengurus", "/donatur", "/petugas", "/pengambilan-koin", "/verifikasi", "/setoran-petugas", "/setor-lazisnu", "/penyaluran-dana", "/laporan"].includes(path);
+    return ["/dashboard", "/profil-ranting", "/pengurus", "/donatur", "/petugas", "/pengambilan-koin", "/verifikasi", "/setoran-petugas", "/setor-lazisnu", "/penyaluran-dana", "/berita", "/laporan"].includes(path);
   }
 
   return true;
@@ -1646,15 +1396,15 @@ function renderLogin() {
     return;
   }
 
-  const supabaseMode = hasSupabaseConfig();
+  const postgresMode = true;
 
   renderShell(`
     <form class="login-card" id="loginForm" novalidate>
       <div class="form-heading">
-        <p class="eyebrow">${supabaseMode ? "Supabase Auth" : "Mode Demo"}</p>
+        <p class="eyebrow">${postgresMode ? "database internal" : "Mode Demo"}</p>
         <h2>Masuk ${brand.name}</h2>
         <strong class="login-subtitle">${brand.subtitle}</strong>
-        <p>${supabaseMode ? "Gunakan email dan password akun resmi yang sudah dibuat di Supabase." : "Supabase belum dikonfigurasi, jadi demo login tetap tersedia untuk mencoba aplikasi."}</p>
+        <p>${postgresMode ? "Gunakan akun database internal." : "Database internal aktif."}</p>
       </div>
 
       <label class="field">
@@ -1669,7 +1419,7 @@ function renderLogin() {
         <small class="error" id="passwordError"></small>
       </label>
 
-      <fieldset class="role-group ${supabaseMode ? "is-hidden" : ""}">
+      <fieldset class="role-group ${postgresMode ? "is-hidden" : ""}">
         <legend>Role Demo</legend>
         <div class="role-options">
           ${roles.map((role, index) => `
@@ -1699,11 +1449,11 @@ async function handleLogin(event) {
   const email = document.querySelector("#email");
   const password = document.querySelector("#password");
   const role = document.querySelector("input[name='role']:checked");
-  const supabaseMode = hasSupabaseConfig();
+  const postgresMode = true;
   const errors = {
     email: email.value.trim() ? "" : "Email wajib diisi.",
     password: password.value.trim() ? "" : "Password wajib diisi.",
-    role: supabaseMode || role ? "" : "Pilih role terlebih dahulu."
+    role: postgresMode || role ? "" : "Pilih role terlebih dahulu."
   };
 
   document.querySelector("#emailError").textContent = errors.email;
@@ -1722,18 +1472,11 @@ async function handleLogin(event) {
   document.querySelector("#formError").textContent = "";
 
   try {
-    if (supabaseMode) {
-      const auth = await supabaseAuthRequest("token?grant_type=password", {
-        method: "POST",
-        body: JSON.stringify({
-          email: email.value.trim(),
-          password: password.value
-        })
-      });
-      setAuthSession(auth);
-      const appSession = await fetchProfileForAuthUser(auth.user);
+    if (postgresMode) {
+      const auth = await internalRequest("login", { method: "POST", body: JSON.stringify({ email: email.value.trim(), password: password.value }) });
+      const appSession = { ...auth.user, id: auth.user.id, email: auth.user.email, name: auth.user.fullName || auth.user.full_name || auth.user.email, role: auth.user.role, phone: auth.user.phone || "", token: auth.token, authProvider: "internal", loggedInAt: new Date().toISOString() };
       setSession(appSession);
-      await loadSupabaseData();
+      await loadInternalData();
     } else {
       setSession({
         id: `demo-${role.value}`,
@@ -1761,12 +1504,12 @@ function parseAuthError(error) {
     return "Email atau password tidak sesuai.";
   }
   if (message.includes("Email not confirmed")) {
-    return "Email belum dikonfirmasi di Supabase.";
+    return "Email belum dikonfirmasi.";
   }
   if (message.includes("profil belum dibuat") || message.includes("Akun belum aktif")) {
-    return "Akun Auth sudah ada, tetapi profil aplikasi belum aktif. Hubungi admin.";
+    return "Akun sudah ada, tetapi profil aplikasi belum aktif. Hubungi admin.";
   }
-  return "Login belum berhasil. Periksa email, password, atau koneksi Supabase.";
+  return "Login belum berhasil. Periksa email, password, atau koneksi server.";
 }
 
 async function handleForgotPassword() {
@@ -1781,19 +1524,19 @@ async function handleForgotPassword() {
     return;
   }
 
-  if (!hasSupabaseConfig()) {
-    success.textContent = "Mode demo tidak memakai reset password. Saat Supabase aktif, instruksi reset dikirim ke email.";
+  if (!hasPostgresConfig()) {
+    success.textContent = "Reset password belum tersedia di auth internal. Hubungi admin.";
     return;
   }
 
   try {
-    await supabaseAuthRequest("recover", {
+    await postgresAuthRequest("recover", {
       method: "POST",
       body: JSON.stringify({ email })
     });
     success.textContent = "Instruksi reset password sudah dikirim jika email terdaftar.";
   } catch {
-    error.textContent = "Instruksi reset belum bisa dikirim. Cek konfigurasi Auth Supabase.";
+    error.textContent = "Instruksi reset belum bisa dikirim. Hubungi admin.";
   }
 }
 
@@ -2325,7 +2068,7 @@ function renderDonors() {
 
   const donors = getVisibleDonors(session);
   if (generateAllDonorQrs()) {
-    syncTableToSupabase("donatur");
+    syncTableToPostgres("donatur");
   }
   const rtOptions = [...new Set(appState.donors.map((donor) => donor.rt))].sort();
   const rwOptions = [...new Set(appState.donors.map((donor) => donor.rw))].sort();
@@ -2399,7 +2142,7 @@ function bindDonorEvents(session) {
   document.querySelector("#printAllDonorQrButton")?.addEventListener("click", () => printDonorQrLabels(getVisibleDonors(session)));
   document.querySelector("#generateAllDonorQrButton")?.addEventListener("click", () => {
     generateAllDonorQrs(true);
-    syncTableToSupabase("donatur");
+    syncTableToPostgres("donatur");
     renderDonors();
   });
   document.querySelector("#donorImportFile")?.addEventListener("change", handleDonorImportFile);
@@ -2446,7 +2189,7 @@ function bindDonorEvents(session) {
       if (button.dataset.donorQrAction === "print") printDonorQrLabels([donor]);
       if (button.dataset.donorQrAction === "regenerate") {
         ensureDonorQr(donor, true);
-        syncTableToSupabase("donatur");
+        syncTableToPostgres("donatur");
         renderDonors();
       }
     });
@@ -2489,7 +2232,7 @@ function saveDonorImport() {
     ...row.donor
   })).map(ensureDonorQr);
   appState.donors = [...imported, ...appState.donors];
-  syncTableToSupabase("donatur");
+  syncTableToPostgres("donatur");
   closeDonorImportModal();
 }
 
@@ -2535,16 +2278,16 @@ function handleDonorSubmit(event) {
     ];
   }
 
-  syncTableToSupabase("donatur");
+  syncTableToPostgres("donatur");
   closeDonorModal();
 }
 
 async function handleDonorDelete() {
-  if (!await deleteRowFromSupabase("donatur", appState.selectedDonorId)) {
+  if (!await deleteRowFromPostgres("donatur", appState.selectedDonorId)) {
     return;
   }
   appState.donors = appState.donors.filter((donor) => donor.id !== appState.selectedDonorId);
-  syncTableToSupabase("donatur");
+  syncTableToPostgres("donatur");
   closeDonorModal();
 }
 
@@ -2724,7 +2467,7 @@ function addPickupNotificationHistory(pickup, status, note = "") {
   pickup.notificationAt = timestamp;
   pickup.notificationNote = note;
   pickup.notificationHistory = [...(pickup.notificationHistory || []), { status, timestamp, note }];
-  syncTableToSupabase("pengambilan_koin");
+  syncTableToPostgres("pengambilan_koin");
 }
 
 function renderPickupNotificationHistory(pickup) {
@@ -3331,7 +3074,7 @@ async function handlePickupSubmit(event, session) {
     ];
   }
 
-  syncTableToSupabase("pengambilan_koin");
+  syncTableToPostgres("pengambilan_koin");
   appState.pickupModalMode = null;
   appState.selectedPickupId = null;
   appState.pickupPresetDonorId = null;
@@ -3340,11 +3083,11 @@ async function handlePickupSubmit(event, session) {
 }
 
 async function handlePickupDelete() {
-  if (!await deleteRowFromSupabase("pengambilan_koin", appState.selectedPickupId)) {
+  if (!await deleteRowFromPostgres("pengambilan_koin", appState.selectedPickupId)) {
     return;
   }
   appState.pickups = appState.pickups.filter((pickup) => pickup.id !== appState.selectedPickupId);
-  syncTableToSupabase("pengambilan_koin");
+  syncTableToPostgres("pengambilan_koin");
   closePickupModal();
 }
 
@@ -3361,7 +3104,7 @@ function updatePickupStatus(id, status, session) {
     status,
     verificationAudit: [...(pickup.verificationAudit || []), audit]
   } : pickup);
-  syncTableToSupabase("pengambilan_koin");
+  syncTableToPostgres("pengambilan_koin");
   renderPickups();
 }
 
@@ -3774,8 +3517,8 @@ async function handleVerificationSubmit(event, session) {
     verificationAudit: [...(pickup.verificationAudit || []), audit]
   } : pickup);
 
-  syncTableToSupabase("pengambilan_koin");
-  syncVerificationAuditToSupabase(appState.selectedVerificationId, audit, session);
+  syncTableToPostgres("pengambilan_koin");
+  syncVerificationAuditToPostgres(appState.selectedVerificationId, audit, session);
   appState.verificationTab = nextStatus;
   closeVerificationModal();
 }
@@ -4365,10 +4108,10 @@ async function handleOfficerDepositSubmit(event, session) {
   const payload = { depositNo: String(data.get("depositNo") || "").trim(), officer, officerEmail: resolveOfficerEmail(officer, existing?.officerEmail || session.email), date: String(data.get("date") || ""), periodStart: String(data.get("periodStart") || ""), periodEnd: String(data.get("periodEnd") || ""), amount: Number(data.get("amount") || 0), transactionCount: Number(data.get("transactionCount") || 0), method: String(data.get("method") || "Tunai"), status: session.role === "petugas" ? existing?.status || "Menunggu Verifikasi" : String(data.get("status") || "Menunggu Verifikasi"), note: String(data.get("note") || "").trim(), proofPhotoPath: uploaded?.path || existing?.proofPhotoPath || "", proofPhotoUrl: uploaded?.url || existing?.proofPhotoUrl || "", proofPhotoName: uploaded?.name || existing?.proofPhotoName || "" };
   if (!payload.officer || !payload.date || !payload.periodStart || !payload.periodEnd || payload.periodStart > payload.periodEnd || payload.amount <= 0 || payload.transactionCount <= 0) return document.querySelector("#officerDepositFormError").textContent = "Lengkapi petugas, tanggal, periode, nominal, dan jumlah transaksi dengan benar.";
   appState.officerDeposits = existing ? appState.officerDeposits.map((item) => item.id === existing.id ? { ...item, ...payload } : item) : [{ id: Date.now(), ...payload }, ...appState.officerDeposits];
-  syncTableToSupabase("setoran_petugas"); appState.officerDepositModalMode = null; appState.selectedOfficerDepositId = null; renderOfficerDeposits();
+  syncTableToPostgres("setoran_petugas"); appState.officerDepositModalMode = null; appState.selectedOfficerDepositId = null; renderOfficerDeposits();
 }
 
-async function handleOfficerDepositDelete() { if (!await deleteRowFromSupabase("setoran_petugas", appState.selectedOfficerDepositId)) return; appState.officerDeposits = appState.officerDeposits.filter((item) => item.id !== appState.selectedOfficerDepositId); syncTableToSupabase("setoran_petugas"); appState.officerDepositModalMode = null; appState.selectedOfficerDepositId = null; renderOfficerDeposits(); }
+async function handleOfficerDepositDelete() { if (!await deleteRowFromPostgres("setoran_petugas", appState.selectedOfficerDepositId)) return; appState.officerDeposits = appState.officerDeposits.filter((item) => item.id !== appState.selectedOfficerDepositId); syncTableToPostgres("setoran_petugas"); appState.officerDepositModalMode = null; appState.selectedOfficerDepositId = null; renderOfficerDeposits(); }
 
 function canManageLazisnuDeposits(role) { return role === "admin" || role === "bendahara"; }
 function getVisibleLazisnuDeposits() { let items = [...appState.lazisnuDeposits]; const search = appState.lazisnuDepositSearch.trim().toLowerCase(); if (search) items = items.filter((item) => item.depositNo.toLowerCase().includes(search) || item.recipientName.toLowerCase().includes(search)); if (appState.lazisnuDepositDestination !== "all") items = items.filter((item) => item.destination === appState.lazisnuDepositDestination); if (appState.lazisnuDepositDate) items = items.filter((item) => item.date === appState.lazisnuDepositDate); if (appState.lazisnuDepositStatus !== "all") items = items.filter((item) => item.status === appState.lazisnuDepositStatus); return items.sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id); }
@@ -4385,8 +4128,8 @@ function renderLazisnuDepositModal() {
 
 function renderLazisnuDeposits() { const session = getSession(); if (!session?.role) return navigate("/login"); const items = getVisibleLazisnuDeposits(); renderAppShell(session, "Setor ke LAZISNU", `<section class="lazisnu-deposit-hero"><div><p class="eyebrow">Kas Ranting ke LAZISNU</p><h2>Catat dana yang disetorkan ke LAZISNU, MWC, atau PCNU.</h2><p>Bendahara dan admin mengelola bukti penyerahan dana dari kas ranting.</p></div>${canManageLazisnuDeposits(session.role) ? `<button class="primary-button compact" id="addLazisnuDepositButton" type="button">Tambah Setoran</button>` : ""}</section>${renderCashSummary()}<section class="panel lazisnu-deposit-panel"><div class="lazisnu-deposit-toolbar"><label class="search-field"><span>Cari setoran</span><input id="lazisnuDepositSearch" value="${escapeHtml(appState.lazisnuDepositSearch)}" placeholder="Nomor setoran atau penerima" /></label><label><span>Tujuan</span><select id="lazisnuDepositDestination"><option value="all">Semua tujuan</option>${["LAZISNU Ranting","MWC LAZISNU","PC LAZISNU"].map((value) => `<option ${appState.lazisnuDepositDestination === value ? "selected" : ""}>${value}</option>`).join("")}</select></label><label><span>Tanggal</span><input id="lazisnuDepositDate" type="date" value="${escapeHtml(appState.lazisnuDepositDate)}" /></label><label><span>Status</span><select id="lazisnuDepositStatus"><option value="all">Semua status</option>${["Draft","Sudah Disetor","Batal"].map((value) => `<option ${appState.lazisnuDepositStatus === value ? "selected" : ""}>${value}</option>`).join("")}</select></label></div>${renderLazisnuDepositList(items, session)}</section>${renderLazisnuDepositModal()}`); bindLazisnuDepositEvents(); }
 function bindLazisnuDepositEvents() { document.querySelector("#addLazisnuDepositButton")?.addEventListener("click", () => { appState.lazisnuDepositModalMode = "add"; renderLazisnuDeposits(); }); [["#lazisnuDepositSearch","lazisnuDepositSearch","input"],["#lazisnuDepositDestination","lazisnuDepositDestination","change"],["#lazisnuDepositDate","lazisnuDepositDate","change"],["#lazisnuDepositStatus","lazisnuDepositStatus","change"]].forEach(([selector,key,event]) => document.querySelector(selector)?.addEventListener(event, (e) => { appState[key] = e.target.value; renderLazisnuDeposits(); })); document.querySelectorAll("[data-lazisnu-deposit-action]").forEach((button) => button.addEventListener("click", () => { appState.lazisnuDepositModalMode = button.dataset.lazisnuDepositAction; appState.selectedLazisnuDepositId = Number(button.dataset.id); renderLazisnuDeposits(); })); document.querySelectorAll("[data-close-lazisnu-deposit-modal]").forEach((button) => button.addEventListener("click", () => { appState.lazisnuDepositModalMode = null; appState.selectedLazisnuDepositId = null; renderLazisnuDeposits(); })); document.querySelector("#lazisnuDepositForm")?.addEventListener("submit", handleLazisnuDepositSubmit); document.querySelector("#confirmLazisnuDepositDeleteButton")?.addEventListener("click", handleLazisnuDepositDelete); bindImagePreview("#lazisnuDepositProof", "#lazisnuDepositPreview", "#lazisnuDepositFormError"); }
-async function handleLazisnuDepositSubmit(event) { event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); const existing = appState.lazisnuDeposits.find((item) => item.id === appState.selectedLazisnuDepositId); const proof = form.elements.proofPhoto?.files?.[0]; const error = validateImageFile(proof); if (error) return document.querySelector("#lazisnuDepositFormError").textContent = error; let uploaded = null; try { uploaded = proof ? await uploadDocumentationPhoto(proof, "setoran-lazisnu") : null; } catch (uploadError) { return document.querySelector("#lazisnuDepositFormError").textContent = uploadError.message; } const payload = { depositNo: String(data.get("depositNo") || "").trim(), date: String(data.get("date") || ""), destination: String(data.get("destination") || "LAZISNU Ranting"), recipientName: String(data.get("recipientName") || "").trim(), amount: Number(data.get("amount") || 0), method: String(data.get("method") || "Tunai"), receiptNo: String(data.get("receiptNo") || "").trim(), status: String(data.get("status") || "Draft"), note: String(data.get("note") || "").trim(), proofPhotoPath: uploaded?.path || existing?.proofPhotoPath || "", proofPhotoUrl: uploaded?.url || existing?.proofPhotoUrl || "", proofPhotoName: uploaded?.name || existing?.proofPhotoName || "" }; if (!payload.date || !payload.recipientName || payload.amount <= 0) return document.querySelector("#lazisnuDepositFormError").textContent = "Lengkapi tanggal, penerima, dan nominal setoran."; appState.lazisnuDeposits = existing ? appState.lazisnuDeposits.map((item) => item.id === existing.id ? { ...item, ...payload } : item) : [{ id: Date.now(), ...payload }, ...appState.lazisnuDeposits]; syncTableToSupabase("setoran_lazisnu"); appState.lazisnuDepositModalMode = null; appState.selectedLazisnuDepositId = null; renderLazisnuDeposits(); }
-async function handleLazisnuDepositDelete() { if (!await deleteRowFromSupabase("setoran_lazisnu", appState.selectedLazisnuDepositId)) return; appState.lazisnuDeposits = appState.lazisnuDeposits.filter((item) => item.id !== appState.selectedLazisnuDepositId); syncTableToSupabase("setoran_lazisnu"); appState.lazisnuDepositModalMode = null; appState.selectedLazisnuDepositId = null; renderLazisnuDeposits(); }
+async function handleLazisnuDepositSubmit(event) { event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); const existing = appState.lazisnuDeposits.find((item) => item.id === appState.selectedLazisnuDepositId); const proof = form.elements.proofPhoto?.files?.[0]; const error = validateImageFile(proof); if (error) return document.querySelector("#lazisnuDepositFormError").textContent = error; let uploaded = null; try { uploaded = proof ? await uploadDocumentationPhoto(proof, "setoran-lazisnu") : null; } catch (uploadError) { return document.querySelector("#lazisnuDepositFormError").textContent = uploadError.message; } const payload = { depositNo: String(data.get("depositNo") || "").trim(), date: String(data.get("date") || ""), destination: String(data.get("destination") || "LAZISNU Ranting"), recipientName: String(data.get("recipientName") || "").trim(), amount: Number(data.get("amount") || 0), method: String(data.get("method") || "Tunai"), receiptNo: String(data.get("receiptNo") || "").trim(), status: String(data.get("status") || "Draft"), note: String(data.get("note") || "").trim(), proofPhotoPath: uploaded?.path || existing?.proofPhotoPath || "", proofPhotoUrl: uploaded?.url || existing?.proofPhotoUrl || "", proofPhotoName: uploaded?.name || existing?.proofPhotoName || "" }; if (!payload.date || !payload.recipientName || payload.amount <= 0) return document.querySelector("#lazisnuDepositFormError").textContent = "Lengkapi tanggal, penerima, dan nominal setoran."; appState.lazisnuDeposits = existing ? appState.lazisnuDeposits.map((item) => item.id === existing.id ? { ...item, ...payload } : item) : [{ id: Date.now(), ...payload }, ...appState.lazisnuDeposits]; syncTableToPostgres("setoran_lazisnu"); appState.lazisnuDepositModalMode = null; appState.selectedLazisnuDepositId = null; renderLazisnuDeposits(); }
+async function handleLazisnuDepositDelete() { if (!await deleteRowFromPostgres("setoran_lazisnu", appState.selectedLazisnuDepositId)) return; appState.lazisnuDeposits = appState.lazisnuDeposits.filter((item) => item.id !== appState.selectedLazisnuDepositId); syncTableToPostgres("setoran_lazisnu"); appState.lazisnuDepositModalMode = null; appState.selectedLazisnuDepositId = null; renderLazisnuDeposits(); }
 
 function canManageDistribution(role) {
   return role === "admin" || role === "bendahara";
@@ -4801,16 +4544,16 @@ async function handleDistributionSubmit(event) {
     appState.distributions = [{ id: Date.now(), ...payload }, ...appState.distributions];
   }
 
-  syncTableToSupabase("penyaluran_dana");
+  syncTableToPostgres("penyaluran_dana");
   closeDistributionModal();
 }
 
 async function handleDistributionDelete() {
-  if (!await deleteRowFromSupabase("penyaluran_dana", appState.selectedDistributionId)) {
+  if (!await deleteRowFromPostgres("penyaluran_dana", appState.selectedDistributionId)) {
     return;
   }
   appState.distributions = appState.distributions.filter((item) => item.id !== appState.selectedDistributionId);
-  syncTableToSupabase("penyaluran_dana");
+  syncTableToPostgres("penyaluran_dana");
   closeDistributionModal();
 }
 
@@ -5226,16 +4969,16 @@ function handleOfficerSubmit(event) {
     appState.officers = [{ id: Date.now(), ...payload }, ...appState.officers];
   }
 
-  syncTableToSupabase("petugas");
+  syncTableToPostgres("petugas");
   closeOfficerModal();
 }
 
 async function handleOfficerDelete() {
-  if (!await deleteRowFromSupabase("petugas", appState.selectedOfficerId)) {
+  if (!await deleteRowFromPostgres("petugas", appState.selectedOfficerId)) {
     return;
   }
   appState.officers = appState.officers.filter((officer) => officer.id !== appState.selectedOfficerId);
-  syncTableToSupabase("petugas");
+  syncTableToPostgres("petugas");
   closeOfficerModal();
 }
 
@@ -5354,7 +5097,7 @@ function handleProfileSubmit(event) {
     appState.branchProfile[key] = String(data.get(key) || "").trim();
   });
   appState.profileEditMode = false;
-  syncProfileToSupabase();
+  syncProfileToPostgres();
   renderProfile();
 }
 
@@ -5562,16 +5305,16 @@ async function handleBoardSubmit(event) {
   } else {
     appState.boardMembers = [{ id: Date.now(), ...payload }, ...appState.boardMembers];
   }
-  syncTableToSupabase("pengurus");
+  syncTableToPostgres("pengurus");
   closeBoardModal();
 }
 
 async function handleBoardDelete() {
-  if (!await deleteRowFromSupabase("pengurus", appState.selectedBoardId)) {
+  if (!await deleteRowFromPostgres("pengurus", appState.selectedBoardId)) {
     return;
   }
   appState.boardMembers = appState.boardMembers.filter((member) => member.id !== appState.selectedBoardId);
-  syncTableToSupabase("pengurus");
+  syncTableToPostgres("pengurus");
   closeBoardModal();
 }
 
@@ -5627,7 +5370,24 @@ function renderSettings() {
         <h2>Atur identitas, target, format nomor, laporan, dan tampilan.</h2>
         <p>${canEdit ? "Admin dapat mengubah seluruh pengaturan sistem." : "Mode lihat saja untuk bendahara dan pengurus/pemantau."}</p>
       </div>
-      ${canEdit ? `<button class="primary-button compact" id="toggleSettingsEdit" type="button">${appState.settingsEditMode ? "Batal Edit" : "Edit Pengaturan"}</button>` : ""}
+      <div class="modal-actions">
+        <button class="ghost-button compact" id="togglePasswordForm" type="button">Ubah Password</button>
+        ${canEdit ? `<button class="primary-button compact" id="toggleSettingsEdit" type="button">${appState.settingsEditMode ? "Batal Edit" : "Edit Pengaturan"}</button>` : ""}
+      </div>
+    </section>
+
+    <section class="panel ${appState.passwordEditMode ? "" : "is-hidden"}">
+      <h3>Ubah Password</h3>
+      <form id="changePasswordForm" class="settings-form">
+        <div class="form-grid">
+          <label class="field"><span>Password lama</span><input name="currentPassword" type="password" autocomplete="current-password" required /></label>
+          <label class="field"><span>Password baru</span><input name="newPassword" type="password" autocomplete="new-password" minlength="8" required /></label>
+          <label class="field"><span>Ulangi password baru</span><input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required /></label>
+        </div>
+        <small class="error" id="changePasswordError"></small>
+        <small class="success" id="changePasswordSuccess"></small>
+        <div class="modal-actions"><button class="primary-button compact" type="submit">Simpan Password</button></div>
+      </form>
     </section>
 
     ${appState.settingsEditMode && canEdit ? renderSettingsForm(settings) : renderSettingsDetail(settings)}
@@ -5642,6 +5402,11 @@ function renderSettings() {
     renderSettings();
   });
   document.querySelector("#settingsForm")?.addEventListener("submit", handleSettingsSubmit);
+  document.querySelector("#togglePasswordForm")?.addEventListener("click", () => {
+    appState.passwordEditMode = !appState.passwordEditMode;
+    renderSettings();
+  });
+  document.querySelector("#changePasswordForm")?.addEventListener("submit", handleChangePasswordSubmit);
   ["pickupNumberFormat", "distributionNumberFormat", "activeYear"].forEach((name) => {
     document.querySelector(`[name="${name}"]`)?.addEventListener("input", updateSettingsPreview);
   });
@@ -5766,8 +5531,32 @@ function handleSettingsSubmit(event) {
     }
   });
   appState.settingsEditMode = false;
-  syncSettingsToSupabase();
+  syncSettingsToPostgres();
   renderSettings();
+}
+
+async function handleChangePasswordSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const error = document.querySelector("#changePasswordError");
+  const success = document.querySelector("#changePasswordSuccess");
+  if (error) error.textContent = "";
+  if (success) success.textContent = "";
+  const payload = {
+    currentPassword: String(data.get("currentPassword") || ""),
+    newPassword: String(data.get("newPassword") || ""),
+    confirmPassword: String(data.get("confirmPassword") || "")
+  };
+  const parsed = changePasswordSchema.safeParse(payload);
+  if (!parsed.success) { if (error) error.textContent = parsed.error.issues[0]?.message || "Password tidak valid."; return; }
+  try {
+    await internalRequest("change-password", { method: "POST", body: JSON.stringify({ currentPassword: parsed.data.currentPassword, newPassword: parsed.data.newPassword }) });
+    form.reset();
+    if (success) success.textContent = "Password berhasil diubah.";
+  } catch (err) {
+    if (error) error.textContent = err.message || "Password gagal diubah.";
+  }
 }
 
 function getVisibleUsers() {
@@ -5794,9 +5583,9 @@ function renderUsers() {
   renderAppShell(session, "Kelola User", `
     <section class="settings-hero">
       <div>
-        <p class="eyebrow">Supabase Auth</p>
+        <p class="eyebrow">database internal</p>
         <h2>Kelola profil user, role, dan status akses.</h2>
-        <p>Password tetap dikelola oleh Supabase Auth. Halaman ini hanya menyimpan profil dan hak akses aplikasi.</p>
+        <p>Password tetap dikelola oleh database internal. Halaman ini hanya menyimpan profil dan hak akses aplikasi.</p>
       </div>
       <button class="primary-button compact" id="addUserButton" type="button">Tambah User</button>
     </section>
@@ -5885,14 +5674,14 @@ function renderUserModal() {
           <div>
             <p class="eyebrow">Kelola User</p>
             <h2>${title}</h2>
-            <p>${hasSupabaseConfig() ? "Buat akun di Supabase Auth lebih dulu, lalu isi User ID Auth di sini." : "Mode demo tidak membuat akun Auth asli."}</p>
+            <p>Kelola profil user internal. Password awal dibuat server jika belum diisi.</p>
           </div>
           <button class="icon-button" data-close-user-modal type="button" aria-label="Tutup">x</button>
         </div>
         <div class="form-grid">
           <label class="field full">
-            <span>User ID Auth</span>
-            <input name="id" value="${escapeHtml(values.id)}" ${mode === "edit" ? "readonly" : ""} placeholder="UUID user dari Supabase Auth" required />
+            <span>User ID</span>
+            <input name="id" value="${escapeHtml(values.id)}" ${mode === "edit" ? "readonly" : ""} placeholder="UUID user dari database internal" required />
           </label>
           <label class="field"><span>Nama lengkap</span><input name="fullName" value="${escapeHtml(values.fullName)}" required /></label>
           <label class="field"><span>Email</span><input name="email" type="email" value="${escapeHtml(values.email)}" required /></label>
@@ -5966,7 +5755,7 @@ function handleUserSubmit(event) {
   };
 
   if (!payload.id || !payload.fullName || !payload.email) {
-    document.querySelector("#userFormError").textContent = "User ID Auth, nama, dan email wajib diisi.";
+    document.querySelector("#userFormError").textContent = "User ID, nama, dan email wajib diisi.";
     return;
   }
 
@@ -5981,7 +5770,7 @@ function handleUserSubmit(event) {
   } else {
     appState.users = [payload, ...appState.users];
   }
-  syncTableToSupabase("profiles");
+  syncTableToPostgres("profiles");
   closeUserModal();
 }
 
@@ -5990,18 +5779,18 @@ async function handleUserReset(id) {
   if (!user) {
     return;
   }
-  if (!hasSupabaseConfig()) {
-    alert(`Mode demo: instruksi reset password untuk ${user.email}.`);
+  if (!hasPostgresConfig()) {
+    alert(`Reset password internal belum tersedia untuk ${user.email}.`);
     return;
   }
   try {
-    await supabaseAuthRequest("recover", {
+    await postgresAuthRequest("recover", {
       method: "POST",
       body: JSON.stringify({ email: user.email })
     });
     alert(`Instruksi reset password dikirim ke ${user.email} jika email terdaftar.`);
   } catch {
-    alert("Reset password belum berhasil. Cek konfigurasi email Supabase Auth.");
+    alert("Reset password belum berhasil. Cek konfigurasi email database internal.");
   }
 }
 
@@ -6118,7 +5907,7 @@ function renderPublicGallery() {
 
 function renderPublicDashboard() {
   const session = getSession();
-  const canUploadDocumentation = session?.role === "admin" || session?.role === "bendahara";
+  const canUploadDocumentation = canManagePublicContent(session?.role);
   const profile = appState.branchProfile;
   const activeDonors = appState.donors.filter((donor) => donor.active).length;
   const income = getPublicApprovedIncome();
@@ -6236,6 +6025,8 @@ function renderPublicDashboard() {
 
 async function handlePublicDocumentationSubmit(event) {
   event.preventDefault();
+  const session = getSession();
+  if (!canManagePublicContent(session?.role)) return;
   const form = event.currentTarget;
   const data = new FormData(form);
   const photo = form.elements.photo?.files?.[0];
@@ -6265,8 +6056,93 @@ async function handlePublicDocumentationSubmit(event) {
     photoName: uploadedPhoto.name,
     photoUrl: uploadedPhoto.url
   }, ...appState.publicDocumentation];
-  syncTableToSupabase("dokumentasi_kegiatan");
+  syncTableToPostgres("dokumentasi_kegiatan");
   renderPublicDashboard();
+}
+
+function getPublishedNews() {
+  return appState.news.filter((item) => item.status === "published").sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+
+function renderNewsCards(items, admin = false) {
+  return items.map((item) => `
+    <article class="gallery-card news-card">
+      ${item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.title)}" loading="lazy" />` : ""}
+      <strong>${escapeHtml(item.category)} · ${formatDateId(item.date)}</strong>
+      <h3>${escapeHtml(item.title)}</h3>
+      <span>${escapeHtml(item.excerpt || item.content.slice(0, 140))}</span>
+      ${admin ? `<small>Status: ${escapeHtml(item.status)}</small>` : ""}
+      ${admin ? `<div class="card-actions"><button class="ghost-button" data-edit-news="${item.id}" type="button">Edit</button><button class="danger-button" data-delete-news="${item.id}" type="button">Hapus</button></div>` : ""}
+    </article>
+  `).join("") || `<div class="photo-empty">Belum ada berita.</div>`;
+}
+
+function renderNewsAdmin() {
+  const session = getSession();
+  if (!session?.role) return navigate("/login");
+  const canManage = canManagePublicContent(session.role);
+  const editing = appState.news.find((item) => String(item.id) === String(appState.selectedNewsId));
+  renderAppShell(session, "Berita", `
+    <section class="public-panel">
+      <div class="panel-heading"><div><p class="eyebrow">Publikasi</p><h2>Kelola berita landing page</h2></div>${canManage ? `<button class="primary-button compact" id="addNewsButton" type="button">Tambah Berita</button>` : ""}</div>
+      <div class="gallery-grid">${renderNewsCards(appState.news.sort((a, b) => String(b.date).localeCompare(String(a.date))), canManage)}</div>
+    </section>
+    ${canManage && appState.newsModalOpen ? `
+      <section class="public-panel">
+        <div class="panel-heading"><div><p class="eyebrow">Form Berita</p><h2>${editing ? "Edit" : "Tambah"} Berita</h2></div></div>
+        <form class="public-upload-form" id="newsForm">
+          <div class="form-grid">
+            <label class="field"><span>Judul</span><input name="title" value="${escapeHtml(editing?.title || "")}" required /></label>
+            <label class="field"><span>Kategori</span><input name="category" value="${escapeHtml(editing?.category || "Kegiatan Ranting")}" required /></label>
+            <label class="field"><span>Tanggal</span><input name="date" type="date" value="${escapeHtml(editing?.date || getLocalDateString())}" required /></label>
+            <label class="field"><span>Status</span><select name="status"><option value="published" ${editing?.status !== "draft" ? "selected" : ""}>published</option><option value="draft" ${editing?.status === "draft" ? "selected" : ""}>draft</option></select></label>
+            <label class="field"><span>Gambar</span><input name="image" id="newsImage" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" /></label>
+          </div>
+          <label class="field"><span>Ringkasan</span><textarea name="excerpt" required>${escapeHtml(editing?.excerpt || "")}</textarea></label>
+          <label class="field"><span>Konten</span><textarea name="content" required>${escapeHtml(editing?.content || "")}</textarea></label>
+          <div id="newsImagePreview">${renderPhotoPreview(editing?.imageUrl || "", editing?.title || "Preview gambar berita")}</div>
+          <p class="form-error" id="newsFormError" role="alert"></p>
+          <button class="primary-button compact" type="submit">Simpan Berita</button>
+          <button class="ghost-button" id="cancelNewsButton" type="button">Batal</button>
+        </form>
+      </section>` : ""}
+  `);
+  document.querySelector("#addNewsButton")?.addEventListener("click", () => { appState.selectedNewsId = null; appState.newsModalOpen = true; renderNewsAdmin(); });
+  document.querySelector("#cancelNewsButton")?.addEventListener("click", () => { appState.newsModalOpen = false; appState.selectedNewsId = null; renderNewsAdmin(); });
+  document.querySelectorAll("[data-edit-news]").forEach((button) => button.addEventListener("click", () => { if (!canManagePublicContent(session.role)) return; appState.selectedNewsId = button.dataset.editNews; appState.newsModalOpen = true; renderNewsAdmin(); }));
+  document.querySelectorAll("[data-delete-news]").forEach((button) => button.addEventListener("click", async () => { if (!canManagePublicContent(session.role)) return; if (!confirm("Hapus berita ini?")) return; if (!await deleteRowFromPostgres("berita", button.dataset.deleteNews)) return; appState.news = appState.news.filter((item) => String(item.id) !== String(button.dataset.deleteNews)); renderNewsAdmin(); }));
+  document.querySelector("#newsForm")?.addEventListener("submit", handleNewsSubmit);
+  bindImagePreview("#newsImage", "#newsImagePreview", "#newsFormError");
+}
+
+async function handleNewsSubmit(event) {
+  event.preventDefault();
+  const session = getSession();
+  if (!canManagePublicContent(session?.role)) return;
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const existing = appState.news.find((item) => String(item.id) === String(appState.selectedNewsId));
+  const image = form.elements.image?.files?.[0];
+  let uploaded = null;
+  try { uploaded = image ? await uploadDocumentationPhoto(image, "berita") : null; } catch (error) { document.querySelector("#newsFormError").textContent = error.message; return; }
+  const item = {
+    id: existing?.id || Date.now(),
+    title: String(data.get("title") || "").trim(),
+    category: String(data.get("category") || "Kegiatan Ranting").trim(),
+    date: String(data.get("date") || getLocalDateString()),
+    excerpt: String(data.get("excerpt") || "").trim(),
+    content: String(data.get("content") || "").trim(),
+    imagePath: uploaded?.path || existing?.imagePath || "",
+    imageName: uploaded?.name || existing?.imageName || "",
+    imageUrl: uploaded?.url || existing?.imageUrl || "",
+    status: String(data.get("status") || "draft")
+  };
+  if (!item.title || !item.excerpt || !item.content) { document.querySelector("#newsFormError").textContent = "Judul, ringkasan, dan konten wajib diisi."; return; }
+  appState.news = [item, ...appState.news.filter((news) => String(news.id) !== String(item.id))];
+  await syncTableToPostgres("berita");
+  appState.newsModalOpen = false;
+  appState.selectedNewsId = null;
+  renderNewsAdmin();
 }
 
 function renderPlaceholder(title) {
@@ -6299,11 +6175,7 @@ function renderLandingPage() {
     ["GP Ansor", "Kader muda yang menjaga tradisi, kebangsaan, dan pelayanan umat."],
     ["IPNU - IPPNU", "Wadah belajar, berjejaring, dan bertumbuh bagi pelajar NU."]
   ];
-  const news = [
-    ["Pengajian Rutin dan Silaturahmi Warga Nahdliyin", "Kegiatan Ranting", "Segera diperbarui", "https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=900&q=82"],
-    ["Bakti Sosial: Menguatkan Kepedulian dari Lingkungan Terdekat", "Sosial", "Segera diperbarui", "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=900&q=82"],
-    ["Koordinasi Pengurus untuk Program Khidmah Berkelanjutan", "Organisasi", "Segera diperbarui", "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=82"]
-  ];
+  const news = getPublishedNews().slice(0, 3);
 
   document.title = "PRNU Karangsalam Kidul II | Merawat Tradisi, Menguatkan Khidmah";
   app.innerHTML = `
@@ -6371,8 +6243,8 @@ function renderLandingPage() {
             <div><p class="landing-kicker">Berita Terbaru</p><h2>Kabar dari<br /><span>ranting.</span></h2></div>
             <p>Catatan kegiatan dan gerak khidmah PRNU Karangsalam Kidul II.</p>
           </div>
-          <div class="landing-news-grid">${news.map(([title, category, date, image]) => `
-            <article><img src="${image}" alt="${title}" loading="lazy" /><div><small>${category} · ${date}</small><h3>${title}</h3><a href="#kontak">Baca kabar <span>→</span></a></div></article>
+          <div class="landing-news-grid">${news.map((item) => `
+            <article><img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.title)}" loading="lazy" /><div><small>${escapeHtml(item.category)} · ${formatDateId(item.date)}</small><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.excerpt)}</p><a href="/berita">Baca kabar <span>→</span></a></div></article>
           `).join("")}</div>
         </section>
 
@@ -6487,6 +6359,10 @@ function render() {
     renderDistributions();
     return;
   }
+  if (path === "/berita") {
+    renderNewsAdmin();
+    return;
+  }
   if (path === "/laporan") {
     renderReports();
     return;
@@ -6505,9 +6381,9 @@ function render() {
 window.addEventListener("popstate", render);
 
 async function initApp() {
-  app.innerHTML = `<section class="placeholder-panel"><p class="eyebrow">Memuat</p><h2>Menyiapkan aplikasi</h2><p>Jika Supabase belum dikonfigurasi, aplikasi akan berjalan dalam mode demo.</p></section>`;
-  await restoreSupabaseSession();
-  await loadSupabaseData();
+  app.innerHTML = `<section class="placeholder-panel"><p class="eyebrow">Memuat</p><h2>Menyiapkan aplikasi</h2><p>Jika PostgreSQL belum dikonfigurasi, aplikasi akan berjalan dalam mode demo.</p></section>`;
+  await restorePostgresSession();
+  await loadInternalData();
   render();
 }
 
