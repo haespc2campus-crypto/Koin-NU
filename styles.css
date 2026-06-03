@@ -3884,8 +3884,17 @@ dialog::backdrop {
   font-weight: 700;
 }
 
-/* Organization Hero Section */
-.org-hero {
+/* Unified Admin Page Hero Panels */
+.org-hero,
+.donor-hero,
+.pickup-hero,
+.verification-hero,
+.report-hero,
+.officer-deposit-hero,
+.lazisnu-deposit-hero,
+.distribution-hero,
+.officer-hero,
+.settings-hero {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -3899,14 +3908,32 @@ dialog::backdrop {
   margin-bottom: 1.5rem;
 }
 
-.org-hero h2 {
+.org-hero h2,
+.donor-hero h2,
+.pickup-hero h2,
+.verification-hero h2,
+.report-hero h2,
+.officer-deposit-hero h2,
+.lazisnu-deposit-hero h2,
+.distribution-hero h2,
+.officer-hero h2,
+.settings-hero h2 {
   font-size: 1.55rem;
   font-family: var(--font-sans);
   color: var(--neutral-dark);
   margin-bottom: 0.25rem;
 }
 
-.org-hero p {
+.org-hero p,
+.donor-hero p,
+.pickup-hero p,
+.verification-hero p,
+.report-hero p,
+.officer-deposit-hero p,
+.lazisnu-deposit-hero p,
+.distribution-hero p,
+.officer-hero p,
+.settings-hero p {
   color: var(--neutral-mid);
   font-size: 0.9rem;
 }
@@ -4011,7 +4038,16 @@ dialog::backdrop {
 
 /* Responsive adjust for Admin components */
 @media (max-width: 768px) {
-  .org-hero {
+  .org-hero,
+  .donor-hero,
+  .pickup-hero,
+  .verification-hero,
+  .report-hero,
+  .officer-deposit-hero,
+  .lazisnu-deposit-hero,
+  .distribution-hero,
+  .officer-hero,
+  .settings-hero {
     flex-direction: column;
     align-items: stretch;
     padding: 1.5rem;
