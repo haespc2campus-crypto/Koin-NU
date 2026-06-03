@@ -37,7 +37,7 @@ export async function buildServer(config = getServerConfig()) {
   await app.register(fastifyStatic, {
     root: staticRoot,
     prefix: "/",
-    decorateReply: false
+    decorateReply: true
   });
 
   app.setNotFoundHandler(async (request, reply) => {
