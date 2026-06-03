@@ -4,11 +4,13 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import { changePasswordSchema } from "./src/lib/validators.js";
 import { initModals } from "./src/ui/modal.js";
+import confetti from "canvas-confetti";
 
 window.qrcode = qrcode;
 window.MicroModal = MicroModal;
 window.z = z;
 window.nanoid = nanoid;
+window.confetti = confetti;
 initModals();
 
 const sessionKey = "koin-nu-demo-session";
@@ -6401,17 +6403,19 @@ function renderPlaceholder(title) {
       <p>Menu sudah disiapkan agar navigasi sidebar rapi. Modul ini bisa dilanjutkan setelah Data Donatur selesai.</p>
     </section>
   `);
-}function renderLandingPage() {
+}
+
+function renderLandingPage() {
   const totalIncome = getPublicApprovedIncome();
   const totalTarget = 50000000;
   const totalPercentage = Math.min(100, Math.round((totalIncome / totalTarget) * 100));
 
   const programs = [
-    ["✦", "Aswaja", "Merawat amaliyah Aswaja An-Nahdliyah dalam kehidupan berjamaah."],
-    ["▤", "Dakwah", "Menguatkan majelis ilmu, pengajian, dan syiar Islam rahmatan lil alamin."],
-    ["♥", "Sosial", "Hadir bersama warga melalui kepedulian dan gotong royong."],
-    ["↗", "Ekonomi Umat", "Mendorong kemandirian warga dan penguatan usaha lokal."],
-    ["◉", "Digitalisasi", "Merapikan layanan, informasi, dan transparansi organisasi."]
+    ["Aswaja", "Merawat amaliyah Aswaja An-Nahdliyah dalam kehidupan berjamaah.", `<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`],
+    ["Dakwah", "Menguatkan majelis ilmu, pengajian, dan syiar Islam rahmatan lil alamin.", `<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>`],
+    ["Sosial", "Hadir bersama warga melalui kepedulian dan gotong royong.", `<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></svg>`],
+    ["Ekonomi Umat", "Mendorong kemandirian warga dan penguatan usaha lokal.", `<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`],
+    ["Digitalisasi", "Merapikan layanan, informasi, dan transparansi organisasi.", `<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="12" y1="2" x2="12" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>`]
   ];
   const institutions = [
     ["Muslimat NU", "Ruang khidmah perempuan NU untuk keluarga dan masyarakat."],
@@ -6434,6 +6438,29 @@ function renderPlaceholder(title) {
   document.title = "PRNU Karangsalam Kidul II | Merawat Tradisi, Menguatkan Khidmah";
   app.innerHTML = `
     <div class="landing-page">
+      <!-- Header Topbar -->
+      <div class="landing-topbar">
+        <div class="landing-topbar-content">
+          <div class="landing-topbar-info">
+            <span>
+              <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 9.24v7.68z"/></svg>
+              +62 812-7000-0101
+            </span>
+            <span>
+              <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              admin@rantingnu.id
+            </span>
+          </div>
+          <div class="landing-topbar-actions">
+            <a href="/login" class="landing-topbar-link">
+              <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+              Masuk Sistem SIKOINNU
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Header -->
       <header class="landing-header">
         <a class="landing-brand" href="#beranda" aria-label="PRNU Karangsalam Kidul II">
           <img src="/logo-karangsalam-2.png" alt="Logo Karangsalam 2" />
@@ -6441,59 +6468,195 @@ function renderPlaceholder(title) {
         </a>
         <button class="landing-menu" id="landingMenuButton" aria-expanded="false" aria-controls="landingNav">Menu</button>
         <nav class="landing-nav" id="landingNav">
-          <a href="#beranda">Beranda</a><a href="#profil">Profil</a><a href="#program">Program</a>
-          <a href="#agenda">Agenda</a><a href="#kajian">Kajian</a><a href="#berita">Berita</a>
-          <a href="#donasi">Donasi</a><a href="#kontak">Kontak</a>
+          <a href="#beranda">Beranda</a>
+          <a href="#profil">Profil</a>
+          <a href="#jadwal-shalat">Jadwal Shalat</a>
+          <a href="#program">Program</a>
+          <a href="#agenda">Agenda</a>
+          <a href="#kajian">Kajian</a>
+          <a href="#berita">Berita</a>
+          <a href="#donasi">Donasi</a>
+          <a href="#kontak">Hubungi</a>
         </nav>
       </header>
 
       <main>
+        <!-- Hero Section -->
         <section class="landing-hero" id="beranda">
           <div class="landing-hero-orb"></div>
           <div class="landing-hero-content">
-            <p class="landing-kicker">Pengurus Ranting Nahdlatul Ulama</p>
-            <h1>Karangsalam<br /><em>Kidul II</em></h1>
-            <p class="landing-tagline">Merawat Tradisi, Menguatkan Khidmah, Membangun Umat</p>
-            <p class="landing-hero-copy">Bergerak bersama warga, menjaga amaliyah, menata layanan, dan menghadirkan manfaat dari lingkungan terdekat dengan wajah organisasi yang rapi, amanah, dan terbuka.</p>
-            <div class="landing-badges"><span>Aswaja</span><span>Khidmah</span><span>Transparan</span></div>
+            <div class="hero-kicker-badge">
+              <span>Nahdlatul Ulama</span>
+              <span>Ranting Karangsalam Kidul II</span>
+            </div>
+            <h1>Merawat Tradisi,<br /><em>Menguatkan Khidmah</em></h1>
+            <p class="landing-tagline">Membangun Umat Dari Tingkatan Ranting</p>
+            <p class="landing-hero-copy">Bergerak bersama warga menjaga amalan Ahlussunnah wal Jama'ah, menata layanan sosial-keumatan, dan mengelola infaq/sedekah secara amanah, profesional, dan terbuka.</p>
+            <div class="landing-badges">
+              <span class="landing-hero-tag">Aswaja An-Nahdliyah</span>
+              <span class="landing-hero-tag">Khidmah Jama'ah</span>
+              <span class="landing-hero-tag">Transparansi Koin NU</span>
+            </div>
             <div class="landing-actions">
               <a class="landing-button landing-button-gold" href="#program">Lihat Program</a>
               <a class="landing-button landing-button-outline" href="#kontak">Hubungi Kami</a>
             </div>
           </div>
           <aside class="landing-hero-card">
-            <img src="/logo-karangsalam-2.png" alt="Logo Karangsalam 2" />
-            <p>Khidmah Jam'iyyah</p>
-            <strong>Dari ranting,<br />untuk umat.</strong>
-            <div id="landing-prayer-container" style="width: 100%; margin-top: 1rem;"></div>
+            <div class="hero-card-pattern-overlay"></div>
+            <div class="hero-card-branding">
+              <img src="/logo-karangsalam-2.png" alt="Logo Karangsalam 2" />
+              <div>
+                <strong>SIKOINNU</strong>
+                <small id="hero-clock-panel">Waktu: <span id="hero-clock">--:--:--</span> WIB</small>
+              </div>
+            </div>
+            <div class="hero-card-welcome-message" style="margin-top: 1rem; text-align: left; width: 100%;">
+              <p style="font-size: 0.88rem; line-height: 1.5; color: rgba(255,255,255,0.85); font-style: italic; border-left: 2px solid var(--gold); padding-left: 0.75rem;">
+                "Merawat Tradisi, Menguatkan Khidmah, Membangun Umat. Sistem Informasi Pengelolaan Kotak Infaq Nahdlatul Ulama."
+              </p>
+              <div style="margin-top: 1.5rem; display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--gold-light); font-weight: 700;">
+                <span>MASA KHIDMAH: 2025-2030</span>
+                <span>KAB. BANYUMAS</span>
+              </div>
+            </div>
           </aside>
         </section>
 
+        <!-- Hero Quick Features Grid Overlay -->
+        <div class="hero-quick-features-container">
+          <div class="hero-quick-features">
+            <div class="quick-feature-card">
+              <div class="quick-feature-icon">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              </div>
+              <div class="quick-feature-info">
+                <h4>Shalat Berikutnya</h4>
+                <p id="hero-next-prayer">Memuat...</p>
+              </div>
+            </div>
+            <div class="quick-feature-card">
+              <div class="quick-feature-icon">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              </div>
+              <div class="quick-feature-info">
+                <h4>Koin NU Ranting</h4>
+                <p>Terkumpul: ${totalPercentage}% target</p>
+              </div>
+            </div>
+            <div class="quick-feature-card">
+              <div class="quick-feature-icon">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              </div>
+              <div class="quick-feature-info">
+                <h4>Kajian & Khutbah</h4>
+                <p>2 Audio Kajian Aktif</p>
+              </div>
+            </div>
+            <div class="quick-feature-card">
+              <div class="quick-feature-icon">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div class="quick-feature-info">
+                <h4>Badan Otonom</h4>
+                <p>4 Banom & Lembaga</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- About Section Redesign -->
         <section class="landing-intro landing-section landing-pattern-bg" id="profil">
-          <div><p class="landing-kicker">Tentang Kami</p><h2>Menjaga tradisi.<br /><span>Menyapa zaman.</span></h2></div>
-          <div>
-            <p>PRNU Karangsalam Kidul II hadir sebagai wadah khidmah jam'iyyah Nahdlatul Ulama dalam bidang dakwah, pendidikan, sosial, ekonomi umat, dan penguatan amaliyah Aswaja An-Nahdliyah.</p>
+          <div class="landing-intro-left">
+            <p class="landing-kicker">Tentang Kami</p>
+            <h2>Menjaga tradisi.<br /><span>Menyapa zaman.</span></h2>
+            <p class="landing-intro-desc">PRNU Karangsalam Kidul II hadir sebagai wadah khidmah jam'iyyah Nahdlatul Ulama dalam bidang dakwah, pendidikan, sosial, ekonomi umat, and penguatan amaliyah Aswaja An-Nahdliyah.</p>
+            <ul class="landing-checklist">
+              <li>
+                <span class="checklist-icon">
+                  <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                <div>
+                  <strong>Kemandirian Umat:</strong>
+                  <span>Pengelolaan dana sosial/Koin NU secara amanah, terbuka, dan berdampak maslahat.</span>
+                </div>
+              </li>
+              <li>
+                <span class="checklist-icon">
+                  <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                <div>
+                  <strong>Dakwah Aswaja:</strong>
+                  <span>Menjaga keutuhan aqidah Ahlussunnah wal Jama'ah melalui pengajian dan kajian keilmuan.</span>
+                </div>
+              </li>
+              <li>
+                <span class="checklist-icon">
+                  <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                <div>
+                  <strong>Sinergi Ranting:</strong>
+                  <span>Kolaborasi aktif bersama Banom (Muslimat, Ansor, Fatayat, IPNU-IPPNU) di Karangsalam Kidul II.</span>
+                </div>
+              </li>
+            </ul>
             <a class="landing-text-link" href="#lembaga">Kenali gerakan kami <span>→</span></a>
+          </div>
+          <div class="landing-intro-right">
+            <div class="arched-image-wrapper">
+              <img src="https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=900&q=80" alt="Arsitektur Islam Ranting" class="arched-image" loading="lazy" />
+              <div class="arched-image-border"></div>
+            </div>
           </div>
         </section>
 
+        <!-- Dedicated Prayer Times Section -->
+        <section class="landing-prayer-section landing-section" id="jadwal-shalat">
+          <div class="landing-heading-row">
+            <div>
+              <p class="landing-kicker">Waktu Ibadah</p>
+              <h2>Jadwal Shalat Hari Ini<br /><span>Kabupaten Banyumas</span></h2>
+            </div>
+            <p class="prayer-section-tagline">Waktu shalat sinkron otomatis dengan jadwal resmi Kemenag RI untuk kemudahan ibadah jamaah Ranting.</p>
+          </div>
+          <div id="landing-prayer-container"></div>
+        </section>
+
+        <!-- Program Section -->
         <section class="landing-program-section landing-section" id="program">
           <div class="landing-heading-row">
             <div><p class="landing-kicker">Program Utama</p><h2>Khidmah yang tumbuh<br /><span>bersama warga.</span></h2></div>
             <p>Lima arah gerak untuk menguatkan kehidupan berjamaah dan memberi manfaat yang terasa dekat.</p>
           </div>
-          <div class="landing-program-grid">${programs.map(([icon, title, copy], index) => `
-            <article class="landing-program-card"><span>${String(index + 1).padStart(2, "0")}</span><b>${icon}</b><h3>${title}</h3><p>${copy}</p></article>
-          `).join("")}</div>
+          <div class="landing-program-grid">
+            ${programs.map(([title, copy, svgIcon], index) => `
+              <article class="landing-program-card">
+                <span>${String(index + 1).padStart(2, "0")}</span>
+                <b class="program-vector-icon">${svgIcon}</b>
+                <h3>${title}</h3>
+                <p>${copy}</p>
+              </article>
+            `).join("")}
+          </div>
         </section>
 
+        <!-- Banom & Lembaga -->
         <section class="landing-institutions landing-section landing-pattern-bg" id="lembaga">
           <div class="landing-heading-row">
             <div><p class="landing-kicker">Banom & Lembaga</p><h2>Berjalan beriringan,<br /><span>melayani bersama.</span></h2></div>
           </div>
-          <div class="landing-institution-grid">${institutions.map(([title, copy]) => `<article><h3>${title}</h3><p>${copy}</p><span>Pelajari <b>→</b></span></article>`).join("")}</div>
+          <div class="landing-institution-grid">
+            ${institutions.map(([title, copy]) => `
+              <article class="landing-institution-card">
+                <h3>${title}</h3>
+                <p>${copy}</p>
+                <span>Pelajari <b>→</b></span>
+              </article>
+            `).join("")}
+          </div>
         </section>
 
+        <!-- Agenda Section -->
         <section class="landing-events landing-section" id="agenda">
           <div class="landing-heading-row">
             <div><p class="landing-kicker">Agenda Ranting</p><h2>Kegiatan terdekat<br /><span>di Karangsalam Kidul II.</span></h2></div>
@@ -6518,11 +6681,13 @@ function renderPlaceholder(title) {
           </div>
         </section>
 
+        <!-- Kajian / Media Section -->
         <section class="landing-sermons landing-section landing-pattern-bg" id="kajian">
           <div class="landing-heading-row">
             <div><p class="landing-kicker">Kajian & Khutbah</p><h2>Mendengar ilmu,<br /><span>merawat sanad.</span></h2></div>
             <p>Rekaman pengajian dan kajian keislaman moderat khas warga Nahdliyin.</p>
           </div>
+          <audio id="global-sermon-player" style="display: none;"></audio>
           <div class="landing-sermons-grid">
             ${sermons.map((ser, index) => `
               <article class="sermon-card">
@@ -6534,36 +6699,61 @@ function renderPlaceholder(title) {
                   </div>
                 </div>
                 <div class="sermon-player-controls">
-                  <button class="sermon-play-btn" data-audio="${ser.audioUrl}">▶ Putar</button>
+                  <button class="sermon-play-btn" data-audio="${ser.audioUrl}">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                    Putar
+                  </button>
                   <div class="sermon-progress-bar-container">
                     <div class="sermon-progress-track"><div class="sermon-progress-filled" style="width: 0%;"></div></div>
                   </div>
-                  <a href="#" class="sermon-download-btn" title="Download Catatan PDF">📄 PDF</a>
+                  <a href="#" class="sermon-download-btn" title="Download Catatan PDF" onclick="event.preventDefault(); alert('Ringkasan PDF Kajian akan segera disediakan oleh sekretaris.');">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    PDF
+                  </a>
                 </div>
               </article>
             `).join("")}
           </div>
         </section>
 
+        <!-- News Section -->
         <section class="landing-news landing-section" id="berita">
           <div class="landing-heading-row">
             <div><p class="landing-kicker">Berita Terbaru</p><h2>Kabar dari<br /><span>ranting.</span></h2></div>
             <p>Catatan kegiatan dan gerak khidmah PRNU Karangsalam Kidul II.</p>
           </div>
-          <div class="landing-news-grid">${news.length ? news.map((item) => `
-            <article><img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.title)}" loading="lazy" /><div><small>${escapeHtml(item.category)} · ${formatDateId(item.date)}</small><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.excerpt)}</p><a href="/berita">Baca kabar <span>→</span></a></div></article>
-          `).join("") : `<div class="photo-empty" style="grid-column: 1 / -1;">Belum ada berita yang diterbitkan.</div>`}</div>
-        </section>
-
-        <section class="landing-gallery landing-section landing-pattern-bg" id="galeri">
-          <div><p class="landing-kicker">Galeri Khidmah</p><h2>Yang dikerjakan bersama,<br /><span>menjadi cerita bersama.</span></h2></div>
-          <div class="landing-gallery-grid">
-            <img src="https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=900&q=82" alt="Kegiatan pengajian" loading="lazy" />
-            <img src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=900&q=82" alt="Kegiatan sosial" loading="lazy" />
-            <img src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=82" alt="Koordinasi pengurus" loading="lazy" />
+          <div class="landing-news-grid">
+            ${news.length ? news.map((item) => `
+              <article class="news-item-card" data-id="${item.id}" style="cursor: pointer;">
+                <div class="news-img-container">
+                  <img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.title)}" loading="lazy" />
+                </div>
+                <div class="news-card-content">
+                  <small>${escapeHtml(item.category)} · ${formatDateId(item.date)}</small>
+                  <h3>${escapeHtml(item.title)}</h3>
+                  <p>${escapeHtml(item.excerpt)}</p>
+                  <span class="news-readmore-btn">Baca kabar lengkap <span>→</span></span>
+                </div>
+              </article>
+            `).join("") : `<div class="photo-empty" style="grid-column: 1 / -1;">Belum ada berita yang diterbitkan.</div>`}
           </div>
         </section>
 
+        <!-- Gallery Section -->
+        <section class="landing-gallery landing-section landing-pattern-bg" id="galeri">
+          <div>
+            <p class="landing-kicker">Galeri Khidmah</p>
+            <h2>Yang dikerjakan bersama,<br /><span>menjadi cerita bersama.</span></h2>
+            <p style="margin-top: 1rem; font-size: 0.92rem;">Rangkaian dokumentasi kegiatan keagamaan, sosial, dan koordinasi jam'iyyah pengurus ranting.</p>
+          </div>
+          <div class="landing-gallery-grid">
+            <img src="https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=900&q=82" alt="Kegiatan pengajian Ranting" loading="lazy" />
+            <img src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=900&q=82" alt="Kegiatan sosial kemanusiaan" loading="lazy" />
+            <img src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=82" alt="Koordinasi pengurus jam'iyyah" loading="lazy" />
+          </div>
+        </section>
+
+        <!-- Donation Campaign Cause Section -->
         <section class="landing-donation landing-section" id="donasi">
           <div>
             <p class="landing-kicker">Koin NU & Donasi</p>
@@ -6571,12 +6761,12 @@ function renderPlaceholder(title) {
             <p>Mari bersama menguatkan khidmah NU untuk umat melalui Koin NU dan donasi program sosial.</p>
             <div class="landing-actions">
               <a class="landing-button landing-button-gold" href="/transparansi">Lihat Transparansi Koin NU</a>
-              <a class="landing-button landing-button-outline" href="#kontak">Donasi Sekarang</a>
+              <button class="landing-button landing-button-outline" id="copyDonationButton" type="button">Donasi Sekarang</button>
             </div>
           </div>
           <div class="landing-donation-stat">
             <small>Gerakan bersama</small>
-            <strong>Koin NU</strong>
+            <strong>Koin NU Ranting</strong>
             <div class="program-progress-container" style="width: 100%; margin: 1.25rem 0 0.75rem; text-align: left;">
               <div class="program-progress-bar" style="background: rgba(255,255,255,0.12);">
                 <div class="program-progress-fill" style="width: ${totalPercentage}%;"></div>
@@ -6590,17 +6780,136 @@ function renderPlaceholder(title) {
           </div>
         </section>
 
+        <!-- Contact & Maps Section -->
         <section class="landing-contact landing-section landing-pattern-bg" id="kontak">
-          <div><p class="landing-kicker">Kontak Kami</p><h2>Mari terhubung<br /><span>dan berkhidmah.</span></h2></div>
+          <div class="landing-contact-info">
+            <p class="landing-kicker">Kontak Kami</p>
+            <h2>Mari terhubung<br /><span>dan berkhidmah.</span></h2>
+            <p style="margin-top: 1rem; font-size: 0.95rem;">Hubungi pengurus untuk informasi kegiatan, setoran Koin NU, pendaftaran donatur baru, atau saran program khidmah.</p>
+            
+            <div class="landing-contact-form-wrapper" style="margin-top: 2rem;">
+              <form class="landing-contact-form" onsubmit="event.preventDefault(); window.confetti({particleCount:100, spread:70}); alert('Terima kasih. Pesan Anda telah terkirim ke sistem pengurus Ranting.'); this.reset();">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                  <input type="text" placeholder="Nama Lengkap" required style="padding:0.75rem 1rem; border-radius:var(--radius-sm); border:1px solid var(--border-light); background:#fff; font-size:0.85rem;" />
+                  <input type="tel" placeholder="Nomor WhatsApp" required style="padding:0.75rem 1rem; border-radius:var(--radius-sm); border:1px solid var(--border-light); background:#fff; font-size:0.85rem;" />
+                </div>
+                <textarea placeholder="Tulis pesan atau saran program..." required rows="4" style="width:100%; padding:0.75rem 1rem; border-radius:var(--radius-sm); border:1px solid var(--border-light); background:#fff; font-size:0.85rem; margin-bottom:1rem; resize:vertical; font-family:inherit;"></textarea>
+                <button type="submit" class="landing-button landing-button-gold" style="border:none; cursor:pointer; width:100%; justify-content:center;">Kirim Pesan Ke Pengurus</button>
+              </form>
+            </div>
+          </div>
           <div class="landing-contact-grid">
-            <article><small>Alamat sekretariat</small><strong>PRNU Karangsalam Kidul II<br />Alamat lengkap akan dilengkapi</strong></article>
-            <article><small>Informasi</small><strong>WhatsApp pengurus akan dilengkapi<br />Email resmi akan dilengkapi</strong></article>
-            <article><small>Akses cepat</small><a href="https://www.google.com/maps/search/?api=1&query=Karangsalam+Kidul+Kedungbanteng+Banyumas" target="_blank" rel="noreferrer">Buka Google Maps →</a><a href="/login">Masuk sistem Koin NU →</a></article>
+            <article>
+              <small>Alamat sekretariat</small>
+              <strong>PRNU Karangsalam Kidul II<br />Gg. Melati RT 02 / RW 03, Kec. Kedungbanteng, Kab. Banyumas, Jawa Tengah</strong>
+            </article>
+            <article>
+              <small>Informasi & Layanan</small>
+              <strong>WhatsApp: +62 812-7000-0101<br />Email: admin@rantingnu.id</strong>
+            </article>
+            <article>
+              <small>Akses cepat</small>
+              <a href="https://www.google.com/maps/search/?api=1&query=Karangsalam+Kidul+Kedungbanteng+Banyumas" target="_blank" rel="noreferrer" class="maps-link">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Buka Google Maps
+              </a>
+              <a href="/login" class="system-link">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+                Masuk Sistem Koin NU
+              </a>
+            </article>
           </div>
         </section>
       </main>
 
-      <footer class="landing-footer"><div class="landing-brand"><img src="/logo-karangsalam-2.png" alt="Logo Karangsalam 2" /><span><strong>PRNU</strong><small>Karangsalam Kidul II</small></span></div><p>Merawat Tradisi, Menguatkan Khidmah, Membangun Umat</p></footer>
+      <!-- Multi-column Premium Footer -->
+      <footer class="landing-footer-premium">
+        <div class="landing-footer-grid">
+          <div class="footer-col brand-col">
+            <div class="landing-brand">
+              <img src="/logo-karangsalam-2.png" alt="Logo Karangsalam 2" />
+              <span><strong>PRNU</strong><small>Karangsalam Kidul II</small></span>
+            </div>
+            <p class="footer-brand-desc">Merawat tradisi Ahlussunnah wal Jama'ah An-Nahdliyah, menguatkan khidmah keumatan, and membangun kemandirian ekonomi umat di tingkatan Ranting.</p>
+            <div class="footer-socials">
+              <a href="#" aria-label="Facebook"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>
+              <a href="#" aria-label="Instagram"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+              <a href="#" aria-label="Youtube"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg></a>
+            </div>
+          </div>
+          <div class="footer-col links-col">
+            <h3>Navigasi Cepat</h3>
+            <ul>
+              <li><a href="#beranda">Beranda</a></li>
+              <li><a href="#profil">Profil Ranting</a></li>
+              <li><a href="#jadwal-shalat">Jadwal Shalat</a></li>
+              <li><a href="#program">Program Utama</a></li>
+              <li><a href="#agenda">Agenda Ranting</a></li>
+              <li><a href="#kajian">Audio Kajian</a></li>
+              <li><a href="#berita">Kabar Ranting</a></li>
+            </ul>
+          </div>
+          <div class="footer-col contact-col">
+            <h3>Sekretariat & Hubungi</h3>
+            <p>
+              <strong>Pengurus Ranting Nahdlatul Ulama</strong><br />
+              Desa Karangsalam Kidul, RT 02 / RW 03<br />
+              Kecamatan Kedungbanteng, Kabupaten Banyumas<br />
+              Jawa Tengah, Indonesia
+            </p>
+            <p style="margin-top: 1rem;">
+              <strong>Layanan Koin NU:</strong> +62 812-7000-0101<br />
+              <strong>Email:</strong> admin@rantingnu.id
+            </p>
+          </div>
+        </div>
+        <div class="landing-footer-bottom">
+          <p>&copy; 2026 SIKOINNU - PRNU Karangsalam Kidul II. Hak Cipta Dilindungi.</p>
+          <p>Membangun Umat Dari Tingkatan Ranting</p>
+        </div>
+      </footer>
+
+      <!-- Modals (Donation Dialog & News Reader Dialog) -->
+      <dialog id="donation-dialog" class="donation-dialog">
+        <div class="donation-dialog-content">
+          <button class="dialog-close-btn" id="close-donation-dialog" aria-label="Tutup">&times;</button>
+          <div class="dialog-header">
+            <img src="/logo-karangsalam-2.png" alt="Logo NU" />
+            <h3>Rekening Donasi & Koin NU</h3>
+            <p>Salurkan infaq terbaik Anda secara langsung melalui transfer bank atau scan QRIS resmi.</p>
+          </div>
+          <div class="dialog-body">
+            <div class="donation-method-card">
+              <div class="method-header">Bank Rakyat Indonesia (BRI)</div>
+              <div class="method-body">
+                <strong>0023-01-000888-53-0</strong>
+                <span>a.n. PRNU Karangsalam Kidul II</span>
+                <button class="copy-btn" data-copy="002301000888530" type="button">
+                  <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  Salin Rekening
+                </button>
+              </div>
+            </div>
+            <div class="donation-method-card">
+              <div class="method-header">QRIS SIKOINNU Ranting</div>
+              <div class="method-body text-center" style="display:flex; flex-direction:column; align-items:center; gap:0.5rem; text-align:center;">
+                <img src="/lazisnu-logo.svg" alt="QRIS QR Code" class="qris-img" style="width:160px; height:160px; object-fit:contain; border:1px solid var(--border-light); border-radius:var(--radius-sm); padding:0.5rem; background:#fff;" />
+                <p class="small" style="font-size:0.75rem; color:var(--neutral-mid); line-height:1.4; max-width:20rem;">Pindai kode QRIS di atas menggunakan aplikasi mobile banking atau e-wallet (Gopay, OVO, Dana, LinkAja).</p>
+              </div>
+            </div>
+          </div>
+          <div class="dialog-footer">
+            <p>Pengurus Ranting NU Karangsalam Kidul II - Transparan & Amanah</p>
+          </div>
+        </div>
+      </dialog>
+
+      <dialog id="news-reader-dialog" class="news-dialog">
+        <div class="news-dialog-content">
+          <button class="dialog-close-btn" id="close-news-dialog" aria-label="Tutup">&times;</button>
+          <div id="news-dialog-body"></div>
+        </div>
+      </dialog>
     </div>`;
 
   document.querySelector("#landingMenuButton")?.addEventListener("click", (event) => {
@@ -6612,12 +6921,151 @@ function renderPlaceholder(title) {
     document.querySelector("#landingMenuButton")?.setAttribute("aria-expanded", "false");
     document.querySelector("#landingNav")?.classList.remove("open");
   }));
+
+  // Functional Audio Player Control
+  const audioPlayer = document.querySelector("#global-sermon-player");
+  let currentPlayingBtn = null;
+  let currentProgressTrack = null;
+
   document.querySelectorAll(".sermon-play-btn").forEach((btn) => {
     btn.addEventListener("click", (event) => {
-      alert("Memutar rekaman kajian: " + event.currentTarget.closest("article").querySelector("h3").textContent);
+      const button = event.currentTarget;
+      const audioUrl = button.dataset.audio;
+      const card = button.closest(".sermon-card");
+      const progressFilled = card.querySelector(".sermon-progress-filled");
+
+      if (currentPlayingBtn === button) {
+        if (audioPlayer.paused) {
+          audioPlayer.play();
+          button.innerHTML = '<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg> Jeda';
+        } else {
+          audioPlayer.pause();
+          button.innerHTML = '<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg> Putar';
+        }
+      } else {
+        if (currentPlayingBtn) {
+          currentPlayingBtn.innerHTML = '<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg> Putar';
+          if (currentProgressTrack) currentProgressTrack.style.width = "0%";
+        }
+
+        currentPlayingBtn = button;
+        currentProgressTrack = progressFilled;
+        audioPlayer.src = audioUrl;
+        audioPlayer.play().catch(e => console.warn("Audio playback issue:", e));
+        button.innerHTML = '<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg> Jeda';
+      }
     });
   });
+
+  if (audioPlayer) {
+    audioPlayer.addEventListener("timeupdate", () => {
+      if (audioPlayer.duration && currentProgressTrack) {
+        const percentage = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+        currentProgressTrack.style.width = `${percentage}%`;
+      }
+    });
+
+    audioPlayer.addEventListener("ended", () => {
+      if (currentPlayingBtn) {
+        currentPlayingBtn.innerHTML = '<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg> Putar';
+      }
+      if (currentProgressTrack) {
+        currentProgressTrack.style.width = "0%";
+      }
+      currentPlayingBtn = null;
+      currentProgressTrack = null;
+    });
+  }
+
+  // Interactive Donation Dialog
+  const donationDialog = document.querySelector("#donation-dialog");
+  document.querySelector("#copyDonationButton")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (donationDialog) {
+      donationDialog.showModal();
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+    }
+  });
+
+  document.querySelector("#close-donation-dialog")?.addEventListener("click", () => {
+    donationDialog?.close();
+  });
+
+  document.querySelectorAll(".copy-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const text = btn.dataset.copy;
+      navigator.clipboard.writeText(text).then(() => {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = 'Tersalin!';
+        btn.classList.add("copied");
+        confetti({
+          particleCount: 50,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0.2, y: 0.6 }
+        });
+        confetti({
+          particleCount: 50,
+          angle: 120,
+          spread: 55,
+          origin: { x: 0.8, y: 0.6 }
+        });
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.classList.remove("copied");
+        }, 2000);
+      }).catch(err => console.error("Clipboard copy failed:", err));
+    });
+  });
+
+  // Interactive News Reader Modal
+  const newsDialog = document.querySelector("#news-reader-dialog");
+  document.querySelectorAll(".landing-news-grid article.news-item-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const id = Number(card.dataset.id);
+      const item = appState.news.find((n) => n.id === id);
+      if (!item) return;
+
+      const body = document.querySelector("#news-dialog-body");
+      if (body) {
+        body.innerHTML = `
+          <div class="news-dialog-header" style="text-align: left; margin-bottom: 1.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; font-weight:700; color:var(--gold-dark); text-transform:uppercase; margin-bottom:0.5rem;">
+              <span>${escapeHtml(item.category)}</span>
+              <span>${formatDateId(item.date)}</span>
+            </div>
+            <h2 style="font-family:var(--font-serif); font-size:1.8rem; line-height:1.3; color:var(--neutral-dark); margin:0;">${escapeHtml(item.title)}</h2>
+          </div>
+          <img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.title)}" style="width:100%; height:280px; object-fit:cover; border-radius:var(--radius-md); margin-bottom:1.5rem; box-shadow:var(--shadow-sm);" />
+          <div class="news-dialog-text" style="font-size:0.95rem; line-height:1.7; color:var(--neutral-mid); text-align:left;">
+            ${item.content.split("\n").filter(Boolean).map(p => `<p style="margin-bottom:1rem;">${escapeHtml(p)}</p>`).join("")}
+          </div>
+        `;
+        if (newsDialog) newsDialog.showModal();
+      }
+    });
+  });
+
+  document.querySelector("#close-news-dialog")?.addEventListener("click", () => {
+    newsDialog?.close();
+  });
+
   updatePrayerWidget("#landing-prayer-container");
+
+  // Real-time ticking clock
+  const updateClock = () => {
+    const clockEl = document.querySelector("#hero-clock");
+    if (!clockEl) return;
+    const now = new Date();
+    clockEl.textContent = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  };
+  updateClock();
+  if (window.heroClockInterval) clearInterval(window.heroClockInterval);
+  window.heroClockInterval = setInterval(updateClock, 1000);
 }
 
 function render() {
