@@ -3846,3 +3846,182 @@ dialog::backdrop {
   }
 }
 
+/* ==========================================================================
+   ADMIN PORTAL UI REDESIGN & NEATENING STYLES
+   ========================================================================== */
+
+/* Dashboard Branding inside Welcome Panel */
+.dashboard-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  max-width: 32rem;
+}
+
+.dashboard-logo {
+  width: 3.5rem;
+  height: 3.5rem;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
+}
+
+.dashboard-brand p.eyebrow {
+  color: var(--gold) !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  margin: 0;
+}
+
+.dashboard-brand strong {
+  color: #fff;
+  font-size: 1.2rem;
+  font-family: var(--font-sans);
+  font-weight: 700;
+}
+
+/* Organization Hero Section */
+.org-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-lg);
+  border-left: 5px solid var(--primary);
+  margin-bottom: 1.5rem;
+}
+
+.org-hero h2 {
+  font-size: 1.55rem;
+  font-family: var(--font-sans);
+  color: var(--neutral-dark);
+  margin-bottom: 0.25rem;
+}
+
+.org-hero p {
+  color: var(--neutral-mid);
+  font-size: 0.9rem;
+}
+
+.report-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Organization Panel */
+.org-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Logo row styling in Organization Profile */
+.org-logo-row {
+  display: flex;
+  gap: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  margin-bottom: 1.5rem;
+}
+
+.org-logo-row > div {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--surface);
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.org-logo-row strong {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: var(--gold);
+  font-size: 1.25rem;
+  font-family: var(--font-sans);
+  box-shadow: 0 4px 10px rgba(11, 107, 58, 0.2);
+  flex-shrink: 0;
+}
+
+.org-logo-row span {
+  font-size: 0.85rem;
+  color: var(--neutral-mid);
+  font-weight: 600;
+}
+
+/* Detail Grid layout for Profile and Modals */
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1.25rem;
+}
+
+.detail-grid > div {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-fast);
+}
+
+.detail-grid > div:hover {
+  border-color: var(--primary-light);
+  transform: translateY(-1px);
+}
+
+.detail-grid > div.full {
+  grid-column: 1 / -1;
+}
+
+.detail-grid span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--neutral-mid);
+}
+
+.detail-grid strong {
+  font-size: 1rem;
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+
+/* Responsive adjust for Admin components */
+@media (max-width: 768px) {
+  .org-hero {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.5rem;
+  }
+  .report-actions {
+    flex-direction: column;
+  }
+  .org-logo-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
