@@ -21,13 +21,12 @@ export async function registerApiRoutes(app, context) {
     if (!user || !(await verifyPassword(password, user.password_hash))) { context.recordLoginAttempt(request, email, false); return send(reply, 401, { error: "Email atau password tidak sesuai." }); }
     context.recordLoginAttempt(request, email, true);
     const responseUser = isLegacyPasswordHash(user.password_hash) ? await context.upgradeProfilePassword(db, user.id, password) : context.publicUser(user);
-    const token = crypto.randomBytes(32).toString("base64url");
-    context.sessions.set(token, { userId: user.id, expiresAt: Date.now() + context.sessionTtlMs });
+    const expiresAt = Date.now() + context.sessionTtlMs;
+    const token = context.createSessionToken({ userId: user.id, expiresAt });
     return { token, user: responseUser, expiresIn: Math.floor(context.sessionTtlMs / 1000) };
   });
 
-  app.route({ method: ["GET", "POST"], url: "/api/logout", handler: async (request) => {
-    context.sessions.delete(context.authToken(request));
+  app.route({ method: ["GET", "POST"], url: "/api/logout", handler: async () => {
     return { ok: true };
   }});
 

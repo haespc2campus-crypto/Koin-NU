@@ -700,6 +700,22 @@ async function syncTableToPostgres(table) {
   }
 }
 
+async function syncRowToPostgres(table, item) {
+  if (!appState.postgresReady || !item || !item.id) {
+    return;
+  }
+  const rows = toDbRows(table);
+  const dbRow = rows.find((r) => String(r.id) === String(item.id));
+  if (!dbRow) {
+    return;
+  }
+  try {
+    await internalRequest(`table/${table}`, { method: "POST", body: JSON.stringify(dbRow) });
+  } catch (error) {
+    console.warn(`Gagal sinkron baris ${table} id ${item.id}`, error);
+  }
+}
+
 async function deleteRowFromPostgres(table, id) {
   if (!appState.postgresReady || id === null || id === undefined) {
     return true;
@@ -2269,16 +2285,24 @@ function handleDonorSubmit(event) {
     return;
   }
 
+  let targetDonor = null;
   if (appState.modalMode === "edit") {
-    appState.donors = appState.donors.map((donor) => donor.id === appState.selectedDonorId ? ensureDonorQr({ ...donor, ...payload, officerEmail: donor.officerEmail }) : donor);
+    appState.donors = appState.donors.map((donor) => {
+      if (donor.id === appState.selectedDonorId) {
+        targetDonor = ensureDonorQr({ ...donor, ...payload, officerEmail: donor.officerEmail });
+        return targetDonor;
+      }
+      return donor;
+    });
   } else {
+    targetDonor = ensureDonorQr({ id: Date.now(), ...payload });
     appState.donors = [
-      ensureDonorQr({ id: Date.now(), ...payload }),
+      targetDonor,
       ...appState.donors
     ];
   }
 
-  syncTableToPostgres("donatur");
+  syncRowToPostgres("donatur", targetDonor);
   closeDonorModal();
 }
 
@@ -2287,7 +2311,6 @@ async function handleDonorDelete() {
     return;
   }
   appState.donors = appState.donors.filter((donor) => donor.id !== appState.selectedDonorId);
-  syncTableToPostgres("donatur");
   closeDonorModal();
 }
 
@@ -2467,7 +2490,7 @@ function addPickupNotificationHistory(pickup, status, note = "") {
   pickup.notificationAt = timestamp;
   pickup.notificationNote = note;
   pickup.notificationHistory = [...(pickup.notificationHistory || []), { status, timestamp, note }];
-  syncTableToPostgres("pengambilan_koin");
+  syncRowToPostgres("pengambilan_koin", pickup);
 }
 
 function renderPickupNotificationHistory(pickup) {
@@ -3056,25 +3079,33 @@ async function handlePickupSubmit(event, session) {
 
   const isNewPickup = appState.pickupModalMode !== "edit";
   let savedPickupId = appState.selectedPickupId;
+  let targetPickup = null;
   if (!isNewPickup) {
-    appState.pickups = appState.pickups.map((pickup) => pickup.id === appState.selectedPickupId ? { ...pickup, ...payload } : pickup);
+    appState.pickups = appState.pickups.map((pickup) => {
+      if (pickup.id === appState.selectedPickupId) {
+        targetPickup = { ...pickup, ...payload };
+        return targetPickup;
+      }
+      return pickup;
+    });
   } else {
     savedPickupId = Date.now();
     const notificationStatus = normalizeWhatsappNumber(donor?.phone) ? "belum_dikirim" : "nomor_kosong";
+    targetPickup = {
+      id: savedPickupId,
+      ...payload,
+      notificationStatus,
+      notificationAt: notificationStatus === "nomor_kosong" ? new Date().toISOString() : "",
+      notificationNote: notificationStatus === "nomor_kosong" ? "Nomor WhatsApp donatur belum tersedia." : "",
+      notificationHistory: notificationStatus === "nomor_kosong" ? [{ status: "nomor_kosong", timestamp: new Date().toISOString(), note: "Nomor WhatsApp donatur belum tersedia." }] : []
+    };
     appState.pickups = [
-      {
-        id: savedPickupId,
-        ...payload,
-        notificationStatus,
-        notificationAt: notificationStatus === "nomor_kosong" ? new Date().toISOString() : "",
-        notificationNote: notificationStatus === "nomor_kosong" ? "Nomor WhatsApp donatur belum tersedia." : "",
-        notificationHistory: notificationStatus === "nomor_kosong" ? [{ status: "nomor_kosong", timestamp: new Date().toISOString(), note: "Nomor WhatsApp donatur belum tersedia." }] : []
-      },
+      targetPickup,
       ...appState.pickups
     ];
   }
 
-  syncTableToPostgres("pengambilan_koin");
+  syncRowToPostgres("pengambilan_koin", targetPickup);
   appState.pickupModalMode = null;
   appState.selectedPickupId = null;
   appState.pickupPresetDonorId = null;
@@ -3087,7 +3118,6 @@ async function handlePickupDelete() {
     return;
   }
   appState.pickups = appState.pickups.filter((pickup) => pickup.id !== appState.selectedPickupId);
-  syncTableToPostgres("pengambilan_koin");
   closePickupModal();
 }
 
@@ -3099,12 +3129,19 @@ function updatePickupStatus(id, status, session) {
     note: status === "Ditolak" ? "Ditolak dari daftar pengambilan." : "Disetujui dari daftar pengambilan."
   };
 
-  appState.pickups = appState.pickups.map((pickup) => pickup.id === id ? {
-    ...pickup,
-    status,
-    verificationAudit: [...(pickup.verificationAudit || []), audit]
-  } : pickup);
-  syncTableToPostgres("pengambilan_koin");
+  let targetPickup = null;
+  appState.pickups = appState.pickups.map((pickup) => {
+    if (pickup.id === id) {
+      targetPickup = {
+        ...pickup,
+        status,
+        verificationAudit: [...(pickup.verificationAudit || []), audit]
+      };
+      return targetPickup;
+    }
+    return pickup;
+  });
+  syncRowToPostgres("pengambilan_koin", targetPickup);
   renderPickups();
 }
 
@@ -4107,11 +4144,23 @@ async function handleOfficerDepositSubmit(event, session) {
   const officer = String(data.get("officer") || existing?.officer || getDefaultOfficer(session)?.name || "").trim();
   const payload = { depositNo: String(data.get("depositNo") || "").trim(), officer, officerEmail: resolveOfficerEmail(officer, existing?.officerEmail || session.email), date: String(data.get("date") || ""), periodStart: String(data.get("periodStart") || ""), periodEnd: String(data.get("periodEnd") || ""), amount: Number(data.get("amount") || 0), transactionCount: Number(data.get("transactionCount") || 0), method: String(data.get("method") || "Tunai"), status: session.role === "petugas" ? existing?.status || "Menunggu Verifikasi" : String(data.get("status") || "Menunggu Verifikasi"), note: String(data.get("note") || "").trim(), proofPhotoPath: uploaded?.path || existing?.proofPhotoPath || "", proofPhotoUrl: uploaded?.url || existing?.proofPhotoUrl || "", proofPhotoName: uploaded?.name || existing?.proofPhotoName || "" };
   if (!payload.officer || !payload.date || !payload.periodStart || !payload.periodEnd || payload.periodStart > payload.periodEnd || payload.amount <= 0 || payload.transactionCount <= 0) return document.querySelector("#officerDepositFormError").textContent = "Lengkapi petugas, tanggal, periode, nominal, dan jumlah transaksi dengan benar.";
-  appState.officerDeposits = existing ? appState.officerDeposits.map((item) => item.id === existing.id ? { ...item, ...payload } : item) : [{ id: Date.now(), ...payload }, ...appState.officerDeposits];
-  syncTableToPostgres("setoran_petugas"); appState.officerDepositModalMode = null; appState.selectedOfficerDepositId = null; renderOfficerDeposits();
+  let targetItem = null;
+  if (existing) {
+    appState.officerDeposits = appState.officerDeposits.map((item) => {
+      if (item.id === existing.id) {
+        targetItem = { ...item, ...payload };
+        return targetItem;
+      }
+      return item;
+    });
+  } else {
+    targetItem = { id: Date.now(), ...payload };
+    appState.officerDeposits = [targetItem, ...appState.officerDeposits];
+  }
+  syncRowToPostgres("setoran_petugas", targetItem); appState.officerDepositModalMode = null; appState.selectedOfficerDepositId = null; renderOfficerDeposits();
 }
 
-async function handleOfficerDepositDelete() { if (!await deleteRowFromPostgres("setoran_petugas", appState.selectedOfficerDepositId)) return; appState.officerDeposits = appState.officerDeposits.filter((item) => item.id !== appState.selectedOfficerDepositId); syncTableToPostgres("setoran_petugas"); appState.officerDepositModalMode = null; appState.selectedOfficerDepositId = null; renderOfficerDeposits(); }
+async function handleOfficerDepositDelete() { if (!await deleteRowFromPostgres("setoran_petugas", appState.selectedOfficerDepositId)) return; appState.officerDeposits = appState.officerDeposits.filter((item) => item.id !== appState.selectedOfficerDepositId); appState.officerDepositModalMode = null; appState.selectedOfficerDepositId = null; renderOfficerDeposits(); }
 
 function canManageLazisnuDeposits(role) { return role === "admin" || role === "bendahara"; }
 function getVisibleLazisnuDeposits() { let items = [...appState.lazisnuDeposits]; const search = appState.lazisnuDepositSearch.trim().toLowerCase(); if (search) items = items.filter((item) => item.depositNo.toLowerCase().includes(search) || item.recipientName.toLowerCase().includes(search)); if (appState.lazisnuDepositDestination !== "all") items = items.filter((item) => item.destination === appState.lazisnuDepositDestination); if (appState.lazisnuDepositDate) items = items.filter((item) => item.date === appState.lazisnuDepositDate); if (appState.lazisnuDepositStatus !== "all") items = items.filter((item) => item.status === appState.lazisnuDepositStatus); return items.sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id); }
@@ -4128,8 +4177,24 @@ function renderLazisnuDepositModal() {
 
 function renderLazisnuDeposits() { const session = getSession(); if (!session?.role) return navigate("/login"); const items = getVisibleLazisnuDeposits(); renderAppShell(session, "Setor ke LAZISNU", `<section class="lazisnu-deposit-hero"><div><p class="eyebrow">Kas Ranting ke LAZISNU</p><h2>Catat dana yang disetorkan ke LAZISNU, MWC, atau PCNU.</h2><p>Bendahara dan admin mengelola bukti penyerahan dana dari kas ranting.</p></div>${canManageLazisnuDeposits(session.role) ? `<button class="primary-button compact" id="addLazisnuDepositButton" type="button">Tambah Setoran</button>` : ""}</section>${renderCashSummary()}<section class="panel lazisnu-deposit-panel"><div class="lazisnu-deposit-toolbar"><label class="search-field"><span>Cari setoran</span><input id="lazisnuDepositSearch" value="${escapeHtml(appState.lazisnuDepositSearch)}" placeholder="Nomor setoran atau penerima" /></label><label><span>Tujuan</span><select id="lazisnuDepositDestination"><option value="all">Semua tujuan</option>${["LAZISNU Ranting","MWC LAZISNU","PC LAZISNU"].map((value) => `<option ${appState.lazisnuDepositDestination === value ? "selected" : ""}>${value}</option>`).join("")}</select></label><label><span>Tanggal</span><input id="lazisnuDepositDate" type="date" value="${escapeHtml(appState.lazisnuDepositDate)}" /></label><label><span>Status</span><select id="lazisnuDepositStatus"><option value="all">Semua status</option>${["Draft","Sudah Disetor","Batal"].map((value) => `<option ${appState.lazisnuDepositStatus === value ? "selected" : ""}>${value}</option>`).join("")}</select></label></div>${renderLazisnuDepositList(items, session)}</section>${renderLazisnuDepositModal()}`); bindLazisnuDepositEvents(); }
 function bindLazisnuDepositEvents() { document.querySelector("#addLazisnuDepositButton")?.addEventListener("click", () => { appState.lazisnuDepositModalMode = "add"; renderLazisnuDeposits(); }); [["#lazisnuDepositSearch","lazisnuDepositSearch","input"],["#lazisnuDepositDestination","lazisnuDepositDestination","change"],["#lazisnuDepositDate","lazisnuDepositDate","change"],["#lazisnuDepositStatus","lazisnuDepositStatus","change"]].forEach(([selector,key,event]) => document.querySelector(selector)?.addEventListener(event, (e) => { appState[key] = e.target.value; renderLazisnuDeposits(); })); document.querySelectorAll("[data-lazisnu-deposit-action]").forEach((button) => button.addEventListener("click", () => { appState.lazisnuDepositModalMode = button.dataset.lazisnuDepositAction; appState.selectedLazisnuDepositId = Number(button.dataset.id); renderLazisnuDeposits(); })); document.querySelectorAll("[data-close-lazisnu-deposit-modal]").forEach((button) => button.addEventListener("click", () => { appState.lazisnuDepositModalMode = null; appState.selectedLazisnuDepositId = null; renderLazisnuDeposits(); })); document.querySelector("#lazisnuDepositForm")?.addEventListener("submit", handleLazisnuDepositSubmit); document.querySelector("#confirmLazisnuDepositDeleteButton")?.addEventListener("click", handleLazisnuDepositDelete); bindImagePreview("#lazisnuDepositProof", "#lazisnuDepositPreview", "#lazisnuDepositFormError"); }
-async function handleLazisnuDepositSubmit(event) { event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); const existing = appState.lazisnuDeposits.find((item) => item.id === appState.selectedLazisnuDepositId); const proof = form.elements.proofPhoto?.files?.[0]; const error = validateImageFile(proof); if (error) return document.querySelector("#lazisnuDepositFormError").textContent = error; let uploaded = null; try { uploaded = proof ? await uploadDocumentationPhoto(proof, "setoran-lazisnu") : null; } catch (uploadError) { return document.querySelector("#lazisnuDepositFormError").textContent = uploadError.message; } const payload = { depositNo: String(data.get("depositNo") || "").trim(), date: String(data.get("date") || ""), destination: String(data.get("destination") || "LAZISNU Ranting"), recipientName: String(data.get("recipientName") || "").trim(), amount: Number(data.get("amount") || 0), method: String(data.get("method") || "Tunai"), receiptNo: String(data.get("receiptNo") || "").trim(), status: String(data.get("status") || "Draft"), note: String(data.get("note") || "").trim(), proofPhotoPath: uploaded?.path || existing?.proofPhotoPath || "", proofPhotoUrl: uploaded?.url || existing?.proofPhotoUrl || "", proofPhotoName: uploaded?.name || existing?.proofPhotoName || "" }; if (!payload.date || !payload.recipientName || payload.amount <= 0) return document.querySelector("#lazisnuDepositFormError").textContent = "Lengkapi tanggal, penerima, dan nominal setoran."; appState.lazisnuDeposits = existing ? appState.lazisnuDeposits.map((item) => item.id === existing.id ? { ...item, ...payload } : item) : [{ id: Date.now(), ...payload }, ...appState.lazisnuDeposits]; syncTableToPostgres("setoran_lazisnu"); appState.lazisnuDepositModalMode = null; appState.selectedLazisnuDepositId = null; renderLazisnuDeposits(); }
-async function handleLazisnuDepositDelete() { if (!await deleteRowFromPostgres("setoran_lazisnu", appState.selectedLazisnuDepositId)) return; appState.lazisnuDeposits = appState.lazisnuDeposits.filter((item) => item.id !== appState.selectedLazisnuDepositId); syncTableToPostgres("setoran_lazisnu"); appState.lazisnuDepositModalMode = null; appState.selectedLazisnuDepositId = null; renderLazisnuDeposits(); }
+async function handleLazisnuDepositSubmit(event) {
+  event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); const existing = appState.lazisnuDeposits.find((item) => item.id === appState.selectedLazisnuDepositId); const proof = form.elements.proofPhoto?.files?.[0]; const error = validateImageFile(proof); if (error) return document.querySelector("#lazisnuDepositFormError").textContent = error; let uploaded = null; try { uploaded = proof ? await uploadDocumentationPhoto(proof, "setoran-lazisnu") : null; } catch (uploadError) { return document.querySelector("#lazisnuDepositFormError").textContent = uploadError.message; } const payload = { depositNo: String(data.get("depositNo") || "").trim(), date: String(data.get("date") || ""), destination: String(data.get("destination") || "LAZISNU Ranting"), recipientName: String(data.get("recipientName") || "").trim(), amount: Number(data.get("amount") || 0), method: String(data.get("method") || "Tunai"), receiptNo: String(data.get("receiptNo") || "").trim(), status: String(data.get("status") || "Draft"), note: String(data.get("note") || "").trim(), proofPhotoPath: uploaded?.path || existing?.proofPhotoPath || "", proofPhotoUrl: uploaded?.url || existing?.proofPhotoUrl || "", proofPhotoName: uploaded?.name || existing?.proofPhotoName || "" }; if (!payload.date || !payload.recipientName || payload.amount <= 0) return document.querySelector("#lazisnuDepositFormError").textContent = "Lengkapi tanggal, penerima, dan nominal setoran.";
+  let targetItem = null;
+  if (existing) {
+    appState.lazisnuDeposits = appState.lazisnuDeposits.map((item) => {
+      if (item.id === existing.id) {
+        targetItem = { ...item, ...payload };
+        return targetItem;
+      }
+      return item;
+    });
+  } else {
+    targetItem = { id: Date.now(), ...payload };
+    appState.lazisnuDeposits = [targetItem, ...appState.lazisnuDeposits];
+  }
+  syncRowToPostgres("setoran_lazisnu", targetItem); appState.lazisnuDepositModalMode = null; appState.selectedLazisnuDepositId = null; renderLazisnuDeposits();
+}
+async function handleLazisnuDepositDelete() { if (!await deleteRowFromPostgres("setoran_lazisnu", appState.selectedLazisnuDepositId)) return; appState.lazisnuDeposits = appState.lazisnuDeposits.filter((item) => item.id !== appState.selectedLazisnuDepositId); appState.lazisnuDepositModalMode = null; appState.selectedLazisnuDepositId = null; renderLazisnuDeposits(); }
 
 function canManageDistribution(role) {
   return role === "admin" || role === "bendahara";
@@ -4538,13 +4603,21 @@ async function handleDistributionSubmit(event) {
     return;
   }
 
+  let targetItem = null;
   if (appState.distributionModalMode === "edit") {
-    appState.distributions = appState.distributions.map((item) => item.id === appState.selectedDistributionId ? { ...item, ...payload } : item);
+    appState.distributions = appState.distributions.map((item) => {
+      if (item.id === appState.selectedDistributionId) {
+        targetItem = { ...item, ...payload };
+        return targetItem;
+      }
+      return item;
+    });
   } else {
-    appState.distributions = [{ id: Date.now(), ...payload }, ...appState.distributions];
+    targetItem = { id: Date.now(), ...payload };
+    appState.distributions = [targetItem, ...appState.distributions];
   }
 
-  syncTableToPostgres("penyaluran_dana");
+  syncRowToPostgres("penyaluran_dana", targetItem);
   closeDistributionModal();
 }
 
@@ -4553,7 +4626,6 @@ async function handleDistributionDelete() {
     return;
   }
   appState.distributions = appState.distributions.filter((item) => item.id !== appState.selectedDistributionId);
-  syncTableToPostgres("penyaluran_dana");
   closeDistributionModal();
 }
 
@@ -4963,13 +5035,21 @@ function handleOfficerSubmit(event) {
     return;
   }
 
+  let targetOfficer = null;
   if (appState.officerModalMode === "edit") {
-    appState.officers = appState.officers.map((officer) => officer.id === appState.selectedOfficerId ? { ...officer, ...payload } : officer);
+    appState.officers = appState.officers.map((officer) => {
+      if (officer.id === appState.selectedOfficerId) {
+        targetOfficer = { ...officer, ...payload };
+        return targetOfficer;
+      }
+      return officer;
+    });
   } else {
-    appState.officers = [{ id: Date.now(), ...payload }, ...appState.officers];
+    targetOfficer = { id: Date.now(), ...payload };
+    appState.officers = [targetOfficer, ...appState.officers];
   }
 
-  syncTableToPostgres("petugas");
+  syncRowToPostgres("petugas", targetOfficer);
   closeOfficerModal();
 }
 
@@ -4978,7 +5058,6 @@ async function handleOfficerDelete() {
     return;
   }
   appState.officers = appState.officers.filter((officer) => officer.id !== appState.selectedOfficerId);
-  syncTableToPostgres("petugas");
   closeOfficerModal();
 }
 
@@ -5300,12 +5379,20 @@ async function handleBoardSubmit(event) {
     document.querySelector("#boardFormError").textContent = "Nama, alamat, dan masa jabatan wajib diisi.";
     return;
   }
+  let targetItem = null;
   if (appState.boardModalMode === "edit") {
-    appState.boardMembers = appState.boardMembers.map((member) => member.id === appState.selectedBoardId ? { ...member, ...payload } : member);
+    appState.boardMembers = appState.boardMembers.map((member) => {
+      if (member.id === appState.selectedBoardId) {
+        targetItem = { ...member, ...payload };
+        return targetItem;
+      }
+      return member;
+    });
   } else {
-    appState.boardMembers = [{ id: Date.now(), ...payload }, ...appState.boardMembers];
+    targetItem = { id: Date.now(), ...payload };
+    appState.boardMembers = [targetItem, ...appState.boardMembers];
   }
-  syncTableToPostgres("pengurus");
+  syncRowToPostgres("pengurus", targetItem);
   closeBoardModal();
 }
 
@@ -5314,7 +5401,6 @@ async function handleBoardDelete() {
     return;
   }
   appState.boardMembers = appState.boardMembers.filter((member) => member.id !== appState.selectedBoardId);
-  syncTableToPostgres("pengurus");
   closeBoardModal();
 }
 
@@ -5765,12 +5851,20 @@ function handleUserSubmit(event) {
     return;
   }
 
+  let targetUser = null;
   if (appState.userModalMode === "edit") {
-    appState.users = appState.users.map((user) => user.id === appState.selectedUserId ? { ...user, ...payload, createdAt: user.createdAt } : user);
+    appState.users = appState.users.map((user) => {
+      if (user.id === appState.selectedUserId) {
+        targetUser = { ...user, ...payload, createdAt: user.createdAt };
+        return targetUser;
+      }
+      return user;
+    });
   } else {
-    appState.users = [payload, ...appState.users];
+    targetUser = payload;
+    appState.users = [targetUser, ...appState.users];
   }
-  syncTableToPostgres("profiles");
+  syncRowToPostgres("profiles", targetUser);
   closeUserModal();
 }
 
@@ -5905,6 +5999,132 @@ function renderPublicGallery() {
   `).join("");
 }
 
+// Jadwal Shalat Widget Logic
+let cachedPrayerTimes = null;
+let cachedPrayerDate = "";
+
+async function fetchPrayerTimes() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const dateStr = `${year}-${month}-${day}`;
+
+  if (cachedPrayerTimes && cachedPrayerDate === dateStr) {
+    return cachedPrayerTimes;
+  }
+
+  const fallback = {
+    imsak: "04:19",
+    subuh: "04:29",
+    dzuhur: "11:45",
+    ashar: "15:05",
+    maghrib: "17:36",
+    isya: "18:50",
+    lokasi: "KAB. BANYUMAS",
+    tanggal: `${day}/${month}/${year}`
+  };
+
+  try {
+    const response = await fetch(`https://api.myquran.com/v2/sholat/jadwal/1402/${year}/${month}/${day}`);
+    if (!response.ok) throw new Error("API response error");
+    const json = await response.json();
+    if (json && json.status && json.data && json.data.jadwal) {
+      const j = json.data.jadwal;
+      cachedPrayerTimes = {
+        imsak: j.imsak,
+        subuh: j.subuh,
+        dzuhur: j.dzuhur,
+        ashar: j.ashar,
+        maghrib: j.maghrib,
+        isya: j.isya,
+        lokasi: json.data.lokasi || "KAB. BANYUMAS",
+        tanggal: j.tanggal
+      };
+      cachedPrayerDate = dateStr;
+      return cachedPrayerTimes;
+    }
+  } catch (error) {
+    console.warn("Gagal mengambil jadwal shalat dari API, menggunakan fallback:", error);
+  }
+
+  return fallback;
+}
+
+function getActivePrayerIndex(schedule) {
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const parseTime = (timeStr) => {
+    if (!timeStr) return 0;
+    const [h, m] = timeStr.split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  const prayers = [
+    { name: "Imsak", time: parseTime(schedule.imsak) },
+    { name: "Subuh", time: parseTime(schedule.subuh) },
+    { name: "Dzuhur", time: parseTime(schedule.dzuhur) },
+    { name: "Ashar", time: parseTime(schedule.ashar) },
+    { name: "Maghrib", time: parseTime(schedule.maghrib) },
+    { name: "Isya", time: parseTime(schedule.isya) }
+  ];
+
+  for (let i = 0; i < prayers.length; i++) {
+    if (prayers[i].time > currentMinutes) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+async function updatePrayerWidget(containerId) {
+  const container = document.querySelector(containerId);
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="prayer-widget-loading" style="padding: 1rem; text-align: center; color: rgba(255,255,255,0.7); font-size: 0.85rem;">
+      Memuat Jadwal Shalat...
+    </div>
+  `;
+
+  const schedule = await fetchPrayerTimes();
+  const activeIdx = getActivePrayerIndex(schedule);
+
+  const prayerList = [
+    { label: "Imsak", time: schedule.imsak },
+    { label: "Subuh", time: schedule.subuh },
+    { label: "Dzuhur", time: schedule.dzuhur },
+    { label: "Ashar", time: schedule.ashar },
+    { label: "Maghrib", time: schedule.maghrib },
+    { label: "Isya", time: schedule.isya }
+  ];
+
+  container.innerHTML = `
+    <div class="prayer-widget-card">
+      <div class="prayer-widget-header">
+        <div>
+          <h4>Jadwal Shalat</h4>
+          <small>${escapeHtml(schedule.lokasi)} · ${escapeHtml(schedule.tanggal)}</small>
+        </div>
+        <span class="prayer-live-dot">Banyumas</span>
+      </div>
+      <div class="prayer-grid">
+        ${prayerList.map((p, idx) => {
+          const isNext = idx === activeIdx;
+          return `
+            <div class="prayer-item ${isNext ? "next-prayer" : ""}">
+              <span class="prayer-name">${p.label}</span>
+              <span class="prayer-time">${p.time}</span>
+              ${isNext ? '<span class="prayer-badge">Selanjutnya</span>' : ""}
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
 function renderPublicDashboard() {
   const session = getSession();
   const canUploadDocumentation = canManagePublicContent(session?.role);
@@ -5936,7 +6156,7 @@ function renderPublicDashboard() {
       </header>
 
       <section class="public-hero">
-        <div>
+        <div class="public-hero-content">
           <p class="eyebrow">Transparansi Publik</p>
           <h1>${brand.name}: koin warga dikelola terbuka untuk maslahat bersama.</h1>
           <strong class="public-tagline">${brand.tagline}</strong>
@@ -5945,6 +6165,9 @@ function renderPublicDashboard() {
             <button class="ghost-button" id="printPublicButton" type="button">Cetak Ringkasan</button>
             <button class="primary-button compact" id="downloadPublicPdfButton" type="button">Simpan sebagai PDF</button>
           </div>
+        </div>
+        <div class="public-hero-widget">
+          <div id="public-prayer-container" style="width: 100%;"></div>
         </div>
       </section>
 
@@ -6021,6 +6244,7 @@ function renderPublicDashboard() {
   document.querySelector("#downloadPublicPdfButton")?.addEventListener("click", () => window.print());
   document.querySelector("#publicDocumentationForm")?.addEventListener("submit", handlePublicDocumentationSubmit);
   bindImagePreview("#publicDocumentationPhoto", "#publicDocumentationPreview", "#publicDocumentationError");
+  updatePrayerWidget("#public-prayer-container");
 }
 
 async function handlePublicDocumentationSubmit(event) {
@@ -6047,7 +6271,7 @@ async function handlePublicDocumentationSubmit(event) {
     error.textContent = uploadError.message;
     return;
   }
-  appState.publicDocumentation = [{
+  const targetItem = {
     id: Date.now(),
     title: String(data.get("title") || "").trim(),
     category: String(data.get("category") || "Kegiatan Ranting"),
@@ -6055,8 +6279,9 @@ async function handlePublicDocumentationSubmit(event) {
     photoPath: uploadedPhoto.path || "",
     photoName: uploadedPhoto.name,
     photoUrl: uploadedPhoto.url
-  }, ...appState.publicDocumentation];
-  syncTableToPostgres("dokumentasi_kegiatan");
+  };
+  appState.publicDocumentation = [targetItem, ...appState.publicDocumentation];
+  syncRowToPostgres("dokumentasi_kegiatan", targetItem);
   renderPublicDashboard();
 }
 
@@ -6139,7 +6364,7 @@ async function handleNewsSubmit(event) {
   };
   if (!item.title || !item.excerpt || !item.content) { document.querySelector("#newsFormError").textContent = "Judul, ringkasan, dan konten wajib diisi."; return; }
   appState.news = [item, ...appState.news.filter((news) => String(news.id) !== String(item.id))];
-  await syncTableToPostgres("berita");
+  await syncRowToPostgres("berita", item);
   appState.newsModalOpen = false;
   appState.selectedNewsId = null;
   renderNewsAdmin();
@@ -6211,6 +6436,7 @@ function renderLandingPage() {
             <img src="/logo-karangsalam-2.png" alt="Logo Karangsalam 2" />
             <p>Khidmah Jam'iyyah</p>
             <strong>Dari ranting,<br />untuk umat.</strong>
+            <div id="landing-prayer-container" style="width: 100%; margin-top: 1rem;"></div>
           </aside>
         </section>
 
@@ -6293,6 +6519,7 @@ function renderLandingPage() {
     document.querySelector("#landingMenuButton")?.setAttribute("aria-expanded", "false");
     document.querySelector("#landingNav")?.classList.remove("open");
   }));
+  updatePrayerWidget("#landing-prayer-container");
 }
 
 function render() {

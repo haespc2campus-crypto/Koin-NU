@@ -11,3 +11,8 @@ uploads/
 github-login.ps1
 github-publish.ps1
 _gitmeta/
+
+# Deploy configuration and scripts
+.env.deploy
+.env.deploy.*
+scripts/deploy.sh

@@ -18,6 +18,7 @@ export function getServerConfig(root = process.cwd()) {
     port: Number(process.env.PORT || 5173),
     host: process.env.HOST || "0.0.0.0",
     databaseUrl: process.env.DATABASE_URL || "",
+    sessionSecret: process.env.SESSION_SECRET || "default-unsafe-session-secret-change-me",
     dataDir: process.env.DATA_DIR ? path.resolve(root, process.env.DATA_DIR) : path.join(root, "data"),
     uploadsDir: process.env.UPLOADS_DIR ? path.resolve(root, process.env.UPLOADS_DIR) : path.join(root, "uploads"),
     sessionTtlMs: Math.max(30 * 60 * 1000, Number(process.env.SESSION_TTL_MS || 12 * 60 * 60 * 1000)),

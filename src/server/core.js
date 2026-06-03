@@ -25,9 +25,31 @@ export function createApiContext(config) {
   const pgPool = config.databaseUrl ? new pg.Pool({ connectionString: config.databaseUrl }) : null;
   const pgStore = pgPool ? createPostgresStore(pgPool, tables, defaultUsers) : null;
   let pgReady = false;
-  const sessions = new Map();
   const loginAttempts = new Map();
   const dbPath = path.join(config.dataDir, "db.json");
+
+  function createSessionToken(data) {
+    const payload = Buffer.from(JSON.stringify(data)).toString("base64url");
+    const hmac = crypto.createHmac("sha256", config.sessionSecret);
+    hmac.update(payload);
+    const signature = hmac.digest("base64url");
+    return `${payload}.${signature}`;
+  }
+  function verifySessionToken(token) {
+    if (!token || !token.includes(".")) return null;
+    const [payload, signature] = token.split(".");
+    const hmac = crypto.createHmac("sha256", config.sessionSecret);
+    hmac.update(payload);
+    const expectedSignature = hmac.digest("base64url");
+    if (signature !== expectedSignature) return null;
+    try {
+      const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+      if (data.expiresAt < Date.now()) return null;
+      return data;
+    } catch {
+      return null;
+    }
+  }
 
   function emptyDb() { return Object.fromEntries(tables.map((table) => [table, table === "profiles" ? defaultUsers : []])); }
   async function ensurePg() {
@@ -64,7 +86,7 @@ export function createApiContext(config) {
   function loginRateKey(request, email) { return `${request.ip || request.socket?.remoteAddress || "unknown"}:${String(email || "").toLowerCase()}`; }
   function checkLoginRate(request, email) { const key = loginRateKey(request, email); const now = Date.now(); const current = loginAttempts.get(key); if (current?.blockedUntil > now) return false; if (!current || current.resetAt <= now) loginAttempts.set(key, { count: 0, resetAt: now + 15 * 60 * 1000, blockedUntil: 0 }); return true; }
   function recordLoginAttempt(request, email, success) { const key = loginRateKey(request, email); if (success) { loginAttempts.delete(key); return; } const now = Date.now(); const current = loginAttempts.get(key) || { count: 0, resetAt: now + 15 * 60 * 1000, blockedUntil: 0 }; current.count += 1; if (current.count >= 5) current.blockedUntil = now + 15 * 60 * 1000; loginAttempts.set(key, current); }
-  function tokenUser(request, db) { const token = authToken(request); const session = sessions.get(token); if (!session || session.expiresAt < Date.now()) { sessions.delete(token); return null; } return db.profiles.find((u) => u.id === session.userId && u.status !== "tidak_aktif") || null; }
+  function tokenUser(request, db) { const token = authToken(request); const session = verifySessionToken(token); if (!session) return null; return db.profiles.find((u) => u.id === session.userId && u.status !== "tidak_aktif") || null; }
   function publicUser(user) { const { password, password_hash, ...safe } = user; return { ...safe, fullName: safe.full_name, createdAt: safe.created_at }; }
   async function upgradeProfilePassword(db, userId, password) { const index = db.profiles.findIndex((u) => String(u.id) === String(userId)); if (index < 0) return null; db.profiles[index] = { ...db.profiles[index], password_hash: await hashPasswordModern(password), updated_at: new Date().toISOString() }; await persistRow(db, "profiles", db.profiles[index]); return publicUser(db.profiles[index]); }
   async function saveProfilePassword(db, userId, password) { if (!password || String(password).length < 8) throw new Error("Password minimal 8 karakter."); const index = db.profiles.findIndex((u) => String(u.id) === String(userId)); if (index < 0) throw new Error("User tidak ditemukan."); db.profiles[index] = { ...db.profiles[index], password_hash: await hashPasswordModern(password), updated_at: new Date().toISOString() }; await persistRow(db, "profiles", db.profiles[index]); return publicUser(db.profiles[index]); }
@@ -80,5 +102,5 @@ export function createApiContext(config) {
   function safeUploadName(name = "file") { return String(name).toLowerCase().replace(/[^a-z0-9. -]+/g, "").replace(/\.\.+/g, ".").replace(/\s+/g, "-").replace(/^-+|-+$/g, "").replace(/^\.+|\.+$/g, "") || "file"; }
   function detectedImageType(buffer) { if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "image/jpeg"; if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "image/png"; if (buffer.length >= 12 && buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP") return "image/webp"; return ""; }
   async function upload(body, user) { if (!user) return { status: 403, body: { error: "Akses ditolak" } }; const match = String(body?.dataUrl || "").match(/^data:([^;]+);base64,(.+)$/); const type = String(body?.type || match?.[1] || "").toLowerCase(); if (!allowedUploadTypes.has(type)) return { status: 400, body: { error: "Format foto harus JPG, PNG, atau WEBP." } }; if (!match) return { status: 400, body: { error: "Data foto tidak valid." } }; const buffer = Buffer.from(match[2], "base64"); if (!buffer.length || buffer.length > config.maxBodyBytes) return { status: 400, body: { error: "Ukuran foto maksimal 2 MB." } }; const detectedType = detectedImageType(buffer); if (detectedType !== type) return { status: 400, body: { error: "Data foto tidak sesuai format." } }; const ext = allowedUploadTypes.get(type); const folder = safeUploadFolder(body?.folder); const base = safeUploadName(body?.name).replace(/\.(jpe?g|png|webp)$/i, ""); const filename = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}-${base}.${ext}`; const dir = path.join(config.uploadsDir, folder); await mkdir(dir, { recursive: true }); await writeFile(path.join(dir, filename), buffer); const url = `/uploads/${folder}/${filename}`; return { status: 200, body: { name: body?.name || filename, path: url, url, size: buffer.length, type } }; }
-  return { pgPool, ensurePg, readDb, writeDb, persistRow, persistDelete, authToken, checkLoginRate, recordLoginAttempt, tokenUser, publicUser, upgradeProfilePassword, saveProfilePassword, sanitizeRow, canRead, canWrite, safePublicRows, upload, sessions, sessionTtlMs: config.sessionTtlMs };
+  return { pgPool, ensurePg, readDb, writeDb, persistRow, persistDelete, authToken, checkLoginRate, recordLoginAttempt, tokenUser, publicUser, upgradeProfilePassword, saveProfilePassword, sanitizeRow, canRead, canWrite, safePublicRows, upload, createSessionToken, sessionTtlMs: config.sessionTtlMs };
 }
