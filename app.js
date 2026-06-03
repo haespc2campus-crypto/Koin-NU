@@ -6483,7 +6483,6 @@ function renderLandingPage() {
       <main>
         <!-- Hero Section -->
         <section class="landing-hero" id="beranda">
-          <div class="landing-hero-orb"></div>
           <div class="landing-hero-content">
             <div class="hero-kicker-badge">
               <span>Nahdlatul Ulama</span>
