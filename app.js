@@ -5941,14 +5941,31 @@ function renderPublicChart(title, items) {
 }
 
 function renderPublicPrograms() {
-  const categories = ["Santunan Yatim", "Bantuan Dhuafa", "Pendidikan", "Kesehatan", "Bencana", "Kegiatan Keagamaan"];
-  return categories.map((category) => {
-    const items = appState.distributions.filter((item) => item.status === "Disalurkan" && item.category === category);
+  const categories = [
+    { name: "Santunan Yatim", target: 10000000 },
+    { name: "Bantuan Dhuafa", target: 15000000 },
+    { name: "Pendidikan", target: 8000000 },
+    { name: "Kesehatan", target: 6000000 },
+    { name: "Bencana", target: 5000000 },
+    { name: "Kegiatan Keagamaan", target: 12000000 }
+  ];
+  return categories.map((cat) => {
+    const items = appState.distributions.filter((item) => item.status === "Disalurkan" && item.category === cat.name);
+    const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+    const percentage = Math.min(100, Math.round((totalAmount / cat.target) * 100));
     return `
       <article class="program-card">
-        <strong>${category}</strong>
-        <span>${new Set(items.map((item) => item.recipientName)).size} penerima</span>
-        <small>${formatRupiah(items.reduce((sum, item) => sum + item.amount, 0))}</small>
+        <strong>${cat.name}</strong>
+        <span>${new Set(items.map((item) => item.recipientName)).size} penerima manfaat</span>
+        <div class="program-progress-container">
+          <div class="program-progress-bar">
+            <div class="program-progress-fill" style="width: ${percentage}%;"></div>
+          </div>
+          <div class="program-progress-labels">
+            <span>Tersalur: ${formatRupiah(totalAmount)}</span>
+            <span>${percentage}% dari target</span>
+          </div>
+        </div>
       </article>
     `;
   }).join("");
@@ -6387,6 +6404,10 @@ function renderPlaceholder(title) {
 }
 
 function renderLandingPage() {
+  const totalIncome = getPublicApprovedIncome();
+  const totalTarget = 50000000;
+  const totalPercentage = Math.min(100, Math.round((totalIncome / totalTarget) * 100));
+
   const programs = [
     ["✦", "Aswaja", "Merawat amaliyah Aswaja An-Nahdliyah dalam kehidupan berjamaah."],
     ["▤", "Dakwah", "Menguatkan majelis ilmu, pengajian, dan syiar Islam rahmatan lil alamin."],
@@ -6494,7 +6515,20 @@ function renderLandingPage() {
               <a class="landing-button landing-button-outline" href="#kontak">Donasi Sekarang</a>
             </div>
           </div>
-          <div class="landing-donation-stat"><small>Gerakan bersama</small><strong>Koin NU</strong><span>Amanah · Terbuka · Berdampak</span></div>
+          <div class="landing-donation-stat">
+            <small>Gerakan bersama</small>
+            <strong>Koin NU</strong>
+            <div class="program-progress-container" style="width: 100%; margin: 1.25rem 0 0.75rem; text-align: left;">
+              <div class="program-progress-bar" style="background: rgba(255,255,255,0.12);">
+                <div class="program-progress-fill" style="width: ${totalPercentage}%;"></div>
+              </div>
+              <div class="program-progress-labels" style="margin-top: 0.5rem; display: flex; justify-content: space-between;">
+                <span style="color: var(--gold-light); font-size: 0.72rem; font-weight: 700;">Terkumpul: ${formatRupiah(totalIncome)}</span>
+                <span style="color: var(--gold); font-size: 0.72rem; font-weight: 700;">${totalPercentage}% dari target</span>
+              </div>
+            </div>
+            <span>Amanah · Terbuka · Berdampak</span>
+          </div>
         </section>
 
         <section class="landing-contact landing-section" id="kontak">
