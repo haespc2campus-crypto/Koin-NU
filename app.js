@@ -6401,9 +6401,7 @@ function renderPlaceholder(title) {
       <p>Menu sudah disiapkan agar navigasi sidebar rapi. Modul ini bisa dilanjutkan setelah Data Donatur selesai.</p>
     </section>
   `);
-}
-
-function renderLandingPage() {
+}function renderLandingPage() {
   const totalIncome = getPublicApprovedIncome();
   const totalTarget = 50000000;
   const totalPercentage = Math.min(100, Math.round((totalIncome / totalTarget) * 100));
@@ -6421,6 +6419,16 @@ function renderLandingPage() {
     ["GP Ansor", "Kader muda yang menjaga tradisi, kebangsaan, dan pelayanan umat."],
     ["IPNU - IPPNU", "Wadah belajar, berjejaring, dan bertumbuh bagi pelajar NU."]
   ];
+  const events = [
+    { day: "05", month: "Jun", title: "Pengajian Selapanan & Kajian Aswaja", time: "19:30 - 22:00 WIB", location: "Serambi Masjid Baiturrahman" },
+    { day: "12", month: "Jun", title: "Santunan Anak Yatim & Dhuafa Ranting", time: "16:00 - 18:00 WIB", location: "Sekretariat PRNU" },
+    { day: "19", month: "Jun", title: "Lailatul Ijtima' & Istighotsah Bersama", time: "20:00 - 22:30 WIB", location: "Mushola Al-Ikhlas RT 03" },
+    { day: "26", month: "Jun", title: "Rapat Pleno Syuriyah & Tanfidziyah", time: "09:00 - 12:00 WIB", location: "Sekretariat PRNU" }
+  ];
+  const sermons = [
+    { title: "Menguatkan Aswaja di Era Digital", speaker: "K.H. M. Yusuf Chudlori", duration: "45:20", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+    { title: "Khidmah Jam'iyyah & Kemandirian Umat", speaker: "Dr. H. M. Zainul Majdi", duration: "38:15", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" }
+  ];
   const news = getPublishedNews().slice(0, 3);
 
   document.title = "PRNU Karangsalam Kidul II | Merawat Tradisi, Menguatkan Khidmah";
@@ -6434,7 +6442,7 @@ function renderLandingPage() {
         <button class="landing-menu" id="landingMenuButton" aria-expanded="false" aria-controls="landingNav">Menu</button>
         <nav class="landing-nav" id="landingNav">
           <a href="#beranda">Beranda</a><a href="#profil">Profil</a><a href="#program">Program</a>
-          <a href="#lembaga">Lembaga</a><a href="#berita">Berita</a><a href="#galeri">Galeri</a>
+          <a href="#agenda">Agenda</a><a href="#kajian">Kajian</a><a href="#berita">Berita</a>
           <a href="#donasi">Donasi</a><a href="#kontak">Kontak</a>
         </nav>
       </header>
@@ -6461,7 +6469,7 @@ function renderLandingPage() {
           </aside>
         </section>
 
-        <section class="landing-intro landing-section" id="profil">
+        <section class="landing-intro landing-section landing-pattern-bg" id="profil">
           <div><p class="landing-kicker">Tentang Kami</p><h2>Menjaga tradisi.<br /><span>Menyapa zaman.</span></h2></div>
           <div>
             <p>PRNU Karangsalam Kidul II hadir sebagai wadah khidmah jam'iyyah Nahdlatul Ulama dalam bidang dakwah, pendidikan, sosial, ekonomi umat, dan penguatan amaliyah Aswaja An-Nahdliyah.</p>
@@ -6479,11 +6487,62 @@ function renderLandingPage() {
           `).join("")}</div>
         </section>
 
-        <section class="landing-institutions landing-section" id="lembaga">
+        <section class="landing-institutions landing-section landing-pattern-bg" id="lembaga">
           <div class="landing-heading-row">
             <div><p class="landing-kicker">Banom & Lembaga</p><h2>Berjalan beriringan,<br /><span>melayani bersama.</span></h2></div>
           </div>
           <div class="landing-institution-grid">${institutions.map(([title, copy]) => `<article><h3>${title}</h3><p>${copy}</p><span>Pelajari <b>→</b></span></article>`).join("")}</div>
+        </section>
+
+        <section class="landing-events landing-section" id="agenda">
+          <div class="landing-heading-row">
+            <div><p class="landing-kicker">Agenda Ranting</p><h2>Kegiatan terdekat<br /><span>di Karangsalam Kidul II.</span></h2></div>
+            <p>Jadwal berkumpul, ngaji bersama, dan konsolidasi khidmah jam'iyyah.</p>
+          </div>
+          <div class="landing-events-grid">
+            ${events.map(ev => `
+              <article class="event-card">
+                <div class="event-date-badge">
+                  <span class="event-day">${ev.day}</span>
+                  <span class="event-month">${ev.month}</span>
+                </div>
+                <div class="event-details">
+                  <h3>${ev.title}</h3>
+                  <div class="event-meta">
+                    <span>🕒 ${ev.time}</span>
+                    <span>📍 ${ev.location}</span>
+                  </div>
+                </div>
+              </article>
+            `).join("")}
+          </div>
+        </section>
+
+        <section class="landing-sermons landing-section landing-pattern-bg" id="kajian">
+          <div class="landing-heading-row">
+            <div><p class="landing-kicker">Kajian & Khutbah</p><h2>Mendengar ilmu,<br /><span>merawat sanad.</span></h2></div>
+            <p>Rekaman pengajian dan kajian keislaman moderat khas warga Nahdliyin.</p>
+          </div>
+          <div class="landing-sermons-grid">
+            ${sermons.map((ser, index) => `
+              <article class="sermon-card">
+                <div class="sermon-info">
+                  <span class="sermon-number">${String(index + 1).padStart(2, "0")}</span>
+                  <div>
+                    <h3>${ser.title}</h3>
+                    <small>Narasumber: <b>${ser.speaker}</b> · Durasi: ${ser.duration}</small>
+                  </div>
+                </div>
+                <div class="sermon-player-controls">
+                  <button class="sermon-play-btn" data-audio="${ser.audioUrl}">▶ Putar</button>
+                  <div class="sermon-progress-bar-container">
+                    <div class="sermon-progress-track"><div class="sermon-progress-filled" style="width: 0%;"></div></div>
+                  </div>
+                  <a href="#" class="sermon-download-btn" title="Download Catatan PDF">📄 PDF</a>
+                </div>
+              </article>
+            `).join("")}
+          </div>
         </section>
 
         <section class="landing-news landing-section" id="berita">
@@ -6491,12 +6550,12 @@ function renderLandingPage() {
             <div><p class="landing-kicker">Berita Terbaru</p><h2>Kabar dari<br /><span>ranting.</span></h2></div>
             <p>Catatan kegiatan dan gerak khidmah PRNU Karangsalam Kidul II.</p>
           </div>
-          <div class="landing-news-grid">${news.map((item) => `
+          <div class="landing-news-grid">${news.length ? news.map((item) => `
             <article><img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.title)}" loading="lazy" /><div><small>${escapeHtml(item.category)} · ${formatDateId(item.date)}</small><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.excerpt)}</p><a href="/berita">Baca kabar <span>→</span></a></div></article>
-          `).join("")}</div>
+          `).join("") : `<div class="photo-empty" style="grid-column: 1 / -1;">Belum ada berita yang diterbitkan.</div>`}</div>
         </section>
 
-        <section class="landing-gallery landing-section" id="galeri">
+        <section class="landing-gallery landing-section landing-pattern-bg" id="galeri">
           <div><p class="landing-kicker">Galeri Khidmah</p><h2>Yang dikerjakan bersama,<br /><span>menjadi cerita bersama.</span></h2></div>
           <div class="landing-gallery-grid">
             <img src="https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=900&q=82" alt="Kegiatan pengajian" loading="lazy" />
@@ -6531,7 +6590,7 @@ function renderLandingPage() {
           </div>
         </section>
 
-        <section class="landing-contact landing-section" id="kontak">
+        <section class="landing-contact landing-section landing-pattern-bg" id="kontak">
           <div><p class="landing-kicker">Kontak Kami</p><h2>Mari terhubung<br /><span>dan berkhidmah.</span></h2></div>
           <div class="landing-contact-grid">
             <article><small>Alamat sekretariat</small><strong>PRNU Karangsalam Kidul II<br />Alamat lengkap akan dilengkapi</strong></article>
@@ -6553,6 +6612,11 @@ function renderLandingPage() {
     document.querySelector("#landingMenuButton")?.setAttribute("aria-expanded", "false");
     document.querySelector("#landingNav")?.classList.remove("open");
   }));
+  document.querySelectorAll(".sermon-play-btn").forEach((btn) => {
+    btn.addEventListener("click", (event) => {
+      alert("Memutar rekaman kajian: " + event.currentTarget.closest("article").querySelector("h3").textContent);
+    });
+  });
   updatePrayerWidget("#landing-prayer-container");
 }
 

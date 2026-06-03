@@ -2224,6 +2224,223 @@ td span {
   color: var(--gold-dark);
 }
 
+/* Islamic Geometric Pattern Background */
+.landing-pattern-bg {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cpath d='M40 0 L45 25 L70 30 L45 35 L40 60 L35 35 L10 30 L35 25 Z' fill='%230b6b3a' fill-opacity='0.02'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* Premium Parallax-style Hero background overlay */
+.landing-hero {
+  background: 
+    linear-gradient(135deg, rgba(6, 73, 42, 0.94) 0%, rgba(11, 107, 58, 0.85) 60%, rgba(22, 141, 77, 0.8) 100%), 
+    url('https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=1800&q=85');
+  background-size: cover;
+  background-position: center;
+  background-attachment: scroll;
+}
+
+/* Agenda / Events Grid Layout */
+.landing-events-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.event-card {
+  display: flex;
+  gap: 1.25rem;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  align-items: center;
+}
+
+.event-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(11, 107, 58, 0.2);
+}
+
+.event-date-badge {
+  flex: 0 0 4.5rem;
+  height: 4.5rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.event-day {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.event-month {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 0.15rem;
+  color: var(--gold-light);
+}
+
+.event-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.event-details h3 {
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  color: var(--neutral-dark);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.event-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.8rem;
+  color: var(--neutral-mid);
+  font-weight: 600;
+}
+
+/* Kajian & Khutbah Sermons Layout */
+.landing-sermons-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 2rem;
+}
+
+.sermon-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  gap: 2rem;
+}
+
+.sermon-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(11, 107, 58, 0.2);
+}
+
+.sermon-info {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex: 1;
+}
+
+.sermon-number {
+  font-family: var(--font-serif);
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--gold);
+  opacity: 0.7;
+}
+
+.sermon-info h3 {
+  font-size: 1.1rem;
+  color: var(--neutral-dark);
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.sermon-info small {
+  font-size: 0.82rem;
+  color: var(--neutral-mid);
+  font-weight: 600;
+}
+
+.sermon-info small b {
+  color: var(--primary);
+}
+
+.sermon-player-controls {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex: 1;
+  max-width: 25rem;
+}
+
+.sermon-play-btn {
+  background: var(--primary);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 0.5rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.sermon-play-btn:hover {
+  background: var(--primary-dark);
+  transform: scale(1.05);
+}
+
+.sermon-progress-bar-container {
+  flex: 1;
+  height: 6px;
+  background: hsla(var(--h-primary), var(--s-primary), var(--l-primary), 0.08);
+  border-radius: var(--radius-pill);
+  position: relative;
+  overflow: hidden;
+}
+
+.sermon-progress-track {
+  width: 100%;
+  height: 100%;
+}
+
+.sermon-progress-filled {
+  height: 100%;
+  background: var(--gold);
+  border-radius: var(--radius-pill);
+}
+
+.sermon-download-btn {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--neutral-mid);
+  text-decoration: none;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.75rem;
+  transition: var(--transition-fast);
+}
+
+.sermon-download-btn:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
 /* Prayer Widget Card Styling */
 .prayer-widget-card {
   width: 100%;
@@ -2488,6 +2705,21 @@ td span {
   
   .landing-intro, .landing-gallery, .landing-contact, .landing-donation {
     grid-template-columns: 1fr;
+  }
+
+  .landing-events-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .sermon-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .sermon-player-controls {
+    max-width: 100%;
+    width: 100%;
   }
 
   /* Public shell mobile adjustments */
