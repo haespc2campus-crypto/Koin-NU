@@ -4746,4 +4746,902 @@ dialog::backdrop {
   }
 }
 
+/* ==========================================================================
+   Banom Portal & Switcher Styles
+   ========================================================================== */
+
+/* Navbar Dropdown Menu */
+.nav-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.nav-dropdown-trigger {
+  color: var(--neutral-mid);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s;
+}
+
+.nav-dropdown-trigger:hover {
+  color: var(--primary-brand);
+}
+
+.nav-dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #ffffff;
+  min-width: 180px;
+  box-shadow: var(--shadow-md);
+  z-index: 1000;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  overflow: hidden;
+}
+
+.nav-dropdown-content a {
+  color: var(--neutral-dark) !important;
+  padding: 10px 16px;
+  text-decoration: none;
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.nav-dropdown-content a:last-child {
+  border-bottom: none;
+}
+
+.nav-dropdown-content a:hover {
+  background-color: var(--background-light);
+  color: var(--primary-brand) !important;
+}
+
+.nav-dropdown-wrapper:hover .nav-dropdown-content {
+  display: block;
+}
+
+/* Banom Sub-Portal Layout */
+.banom-portal-container {
+  font-family: var(--font-sans);
+  background-color: #f7fafc;
+  min-height: 100vh;
+  color: var(--neutral-dark);
+}
+
+/* Header customization for banom */
+.banom-header {
+  position: sticky;
+  top: 0;
+  z-index: 500;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.banom-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.banom-switcher select {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.5rem 2rem 0.5rem 1rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background-color: #fff;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.banom-switcher select:focus {
+  border-color: var(--banom-color);
+}
+
+.return-main-btn {
+  background-color: transparent !important;
+  border: 1px solid var(--banom-color) !important;
+  color: var(--banom-color) !important;
+  transition: all 0.2s !important;
+}
+
+.return-main-btn:hover {
+  background-color: var(--banom-color) !important;
+  color: #ffffff !important;
+}
+
+/* Banom Hero Section */
+.banom-hero {
+  padding: 6rem 2rem 5rem;
+  text-align: center;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+.banom-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.03) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.banom-icon-large {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: #ffffff;
+  backdrop-filter: blur(5px);
+  animation: pulse-light 3s infinite alternate;
+}
+
+.banom-icon-large svg {
+  width: 48px;
+  height: 48px;
+}
+
+.banom-hero h1 {
+  font-family: var(--font-serif);
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.5px;
+}
+
+.banom-hero-tagline {
+  font-size: 1.15rem;
+  font-weight: 500;
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto 1.5rem;
+  font-style: italic;
+}
+
+.banom-basis-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.4rem 1rem;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  backdrop-filter: blur(3px);
+}
+
+.banom-basis-badge strong {
+  color: #ffd700;
+}
+
+/* Banom Content Section */
+.banom-section-content {
+  padding: 5rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.banom-section-content.bg-light {
+  background-color: #ffffff;
+  max-width: 100%;
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.banom-section-content.bg-light > * {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Grid & Text Columns */
+.banom-grid-two {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.banom-desc-p {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--neutral-mid);
+  margin-bottom: 1.5rem;
+}
+
+.banom-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.banom-tag {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 50px;
+  transition: transform 0.2s;
+}
+
+.banom-tag:hover {
+  transform: translateY(-2px);
+}
+
+.banom-profile-logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.banom-logo-wrap {
+  width: 240px;
+  height: 240px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  transition: all 0.3s;
+}
+
+.banom-logo-wrap::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border: 1px dashed var(--banom-color);
+  opacity: 0.2;
+  border-radius: calc(var(--radius-lg) + 6px);
+  pointer-events: none;
+}
+
+.banom-logo-wrap:hover {
+  transform: rotate(3deg) scale(1.02);
+  box-shadow: var(--shadow-md);
+}
+
+/* Board Members Grid */
+.banom-board-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.banom-board-card {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  transition: all 0.3s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.banom-board-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--banom-color);
+}
+
+.banom-board-avatar-wrap {
+  margin-bottom: 1.25rem;
+  display: inline-block;
+}
+
+.banom-board-card h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--neutral-dark);
+}
+
+.banom-board-position {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 50px;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.banom-board-detail {
+  font-size: 0.8rem;
+  color: var(--neutral-mid);
+  margin: 4px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* News Grid for Banoms */
+.banom-news-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.banom-news-card {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all 0.3s;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+
+.banom-news-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--banom-color);
+}
+
+.banom-news-img-wrap {
+  height: 200px;
+  overflow: hidden;
+}
+
+.banom-news-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s;
+}
+
+.banom-news-card:hover .banom-news-img-wrap img {
+  transform: scale(1.05);
+}
+
+.banom-news-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.banom-news-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.banom-news-category {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.banom-news-date {
+  font-size: 0.75rem;
+  color: var(--neutral-mid);
+}
+
+.banom-news-body h3 {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  color: var(--neutral-dark);
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+.banom-news-body p {
+  font-size: 0.88rem;
+  color: var(--neutral-mid);
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.banom-read-more {
+  margin-top: auto;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.banom-read-more span {
+  transition: transform 0.2s;
+}
+
+.banom-news-card:hover .banom-read-more span {
+  transform: translateX(4px);
+}
+
+/* Gallery Grid for Banoms */
+.banom-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-top: 3rem;
+}
+
+.banom-gallery-item {
+  position: relative;
+  height: 200px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+}
+
+.banom-gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s;
+}
+
+.banom-gallery-item figcaption {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.25rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.banom-gallery-item:hover img {
+  transform: scale(1.05);
+}
+
+.banom-gallery-item:hover figcaption {
+  opacity: 1;
+}
+
+.banom-gallery-item h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+
+.banom-gallery-item small {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* Empty State / Fallbacks */
+.banom-empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  border: 1px dashed var(--border-light);
+  border-radius: var(--radius-md);
+  color: var(--neutral-mid);
+  margin-top: 2rem;
+}
+
+/* Footer of Banom */
+.banom-footer {
+  background-color: #0d1117;
+  color: #8b949e;
+  padding: 4rem 2rem;
+  border-top: 4px solid var(--banom-color);
+}
+
+.banom-footer-top {
+  max-width: 1200px;
+  margin: 0 auto 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.banom-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.banom-footer-brand img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.banom-footer-brand h3 {
+  color: #ffffff;
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.banom-footer-brand p {
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.banom-footer-tagline {
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.banom-footer-bottom {
+  max-width: 1200px;
+  margin: 0 auto;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 1.5rem;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* Pulse animation for hero icon */
+@keyframes pulse-light {
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.2); }
+  100% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+}
+
+/* ============================================
+   FLOATING EMOJI DECORATIONS
+   ============================================ */
+.banom-hero-floating {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.banom-float-emoji {
+  position: absolute;
+  font-size: 2.5rem;
+  opacity: 0.12;
+  animation: floatEmoji 8s ease-in-out infinite;
+}
+
+.banom-float-0 { top: 10%; left: 8%; animation-delay: 0s; font-size: 3rem; }
+.banom-float-1 { top: 20%; right: 12%; animation-delay: 2s; font-size: 2rem; }
+.banom-float-2 { bottom: 20%; left: 15%; animation-delay: 4s; font-size: 2.5rem; }
+.banom-float-3 { bottom: 15%; right: 8%; animation-delay: 6s; font-size: 2rem; }
+
+@keyframes floatEmoji {
+  0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.1; }
+  25% { transform: translateY(-15px) rotate(5deg); opacity: 0.2; }
+  50% { transform: translateY(-25px) rotate(-3deg); opacity: 0.15; }
+  75% { transform: translateY(-10px) rotate(2deg); opacity: 0.2; }
+}
+
+/* ============================================
+   HERO SVG PATTERN OVERLAY (Base)
+   ============================================ */
+.banom-hero-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.06;
+  background-size: 60px 60px;
+  background-repeat: repeat;
+}
+
+.banom-hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* ============================================
+   VISI & MISI SECTION
+   ============================================ */
+.banom-visi-section {
+  padding: 4.5rem 2rem;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.banom-visi-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  gap: 3rem;
+  align-items: flex-start;
+}
+
+.banom-visi-icon {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 50%;
+  border: 2px dashed currentColor;
+  opacity: 0.5;
+}
+
+.banom-visi-icon svg {
+  width: 36px;
+  height: 36px;
+}
+
+.banom-visi-text h2 {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--neutral-dark);
+  margin-bottom: 1rem;
+}
+
+.banom-visi-desc {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--neutral-mid);
+  margin-bottom: 1.5rem;
+}
+
+.banom-quote {
+  border-left: 4px solid var(--banom-color);
+  padding: 1rem 1.5rem;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 0 8px 8px 0;
+}
+
+.banom-quote p {
+  font-style: italic;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--neutral-mid);
+  margin: 0;
+}
+
+/* ============================================
+   PER-BANOM UNIQUE THEME OVERRIDES
+   ============================================ */
+
+/* --- MUSLIMAT NU: Islamic elegance, emerald theme --- */
+.banom-theme-muslimat .banom-hero-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5 L55 30 L30 55 L5 30 Z' fill='none' stroke='white' stroke-width='0.5'/%3E%3Ccircle cx='30' cy='30' r='8' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E");
+  opacity: 0.08;
+}
+.banom-theme-muslimat .banom-board-card { border-radius: 16px; }
+.banom-theme-muslimat .banom-news-card { border-radius: 16px; }
+.banom-theme-muslimat .banom-icon-large { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+
+/* --- FATAYAT NU: Fresh, youthful, flowing curves --- */
+.banom-theme-fatayat .banom-hero-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 30 Q15 10 30 30 Q45 50 60 30' fill='none' stroke='white' stroke-width='0.6'/%3E%3Cpath d='M0 45 Q15 25 30 45 Q45 65 60 45' fill='none' stroke='white' stroke-width='0.4'/%3E%3C/svg%3E");
+  opacity: 0.08;
+}
+.banom-theme-fatayat .banom-board-card { border-radius: 20px; }
+.banom-theme-fatayat .banom-news-card { border-radius: 20px; }
+.banom-theme-fatayat .banom-icon-large { border-radius: 50%; border-width: 2px; }
+.banom-theme-fatayat .banom-float-emoji { opacity: 0.15; }
+
+/* --- GP ANSOR: Bold, military, strong --- */
+.banom-theme-gp-ansor .banom-hero-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5 L40 20 L55 20 L45 32 L50 48 L30 40 L10 48 L15 32 L5 20 L20 20 Z' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E");
+  opacity: 0.06;
+}
+.banom-theme-gp-ansor .banom-hero { border-bottom: 4px solid #ffd700; }
+.banom-theme-gp-ansor .banom-board-card { border-left: 3px solid var(--banom-color); border-radius: 4px; }
+.banom-theme-gp-ansor .banom-news-card { border-radius: 4px; }
+.banom-theme-gp-ansor .banom-icon-large {
+  border-radius: 8px;
+  border: 2px solid rgba(255, 215, 0, 0.3);
+}
+.banom-theme-gp-ansor .banom-basis-badge strong { color: #ffd700; }
+
+/* --- IPNU: Academic, structured, blue theme --- */
+.banom-theme-ipnu .banom-hero-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='10' y='10' width='40' height='40' fill='none' stroke='white' stroke-width='0.4'/%3E%3Cline x1='10' y1='30' x2='50' y2='30' stroke='white' stroke-width='0.3'/%3E%3Cline x1='30' y1='10' x2='30' y2='50' stroke='white' stroke-width='0.3'/%3E%3C/svg%3E");
+  opacity: 0.07;
+}
+.banom-theme-ipnu .banom-board-card { border-radius: 8px; border-top: 3px solid var(--banom-color); }
+.banom-theme-ipnu .banom-news-card { border-radius: 8px; }
+.banom-theme-ipnu .banom-icon-large { border-radius: 12px; }
+
+/* --- IPPNU: Gentle, floral, mint accents --- */
+.banom-theme-ippnu .banom-hero-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='12' fill='none' stroke='white' stroke-width='0.5'/%3E%3Ccircle cx='30' cy='30' r='6' fill='none' stroke='white' stroke-width='0.4'/%3E%3Ccircle cx='30' cy='14' r='3' fill='none' stroke='white' stroke-width='0.3'/%3E%3Ccircle cx='30' cy='46' r='3' fill='none' stroke='white' stroke-width='0.3'/%3E%3Ccircle cx='14' cy='30' r='3' fill='none' stroke='white' stroke-width='0.3'/%3E%3Ccircle cx='46' cy='30' r='3' fill='none' stroke='white' stroke-width='0.3'/%3E%3C/svg%3E");
+  opacity: 0.08;
+}
+.banom-theme-ippnu .banom-board-card { border-radius: 20px; }
+.banom-theme-ippnu .banom-news-card { border-radius: 20px; }
+.banom-theme-ippnu .banom-icon-large { border-radius: 50%; }
+.banom-theme-ippnu .banom-float-emoji { opacity: 0.18; }
+
+/* --- PAGAR NUSA: Dark, bold, dramatic --- */
+.banom-theme-pagar-nusa .banom-hero-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='0' y1='0' x2='60' y2='60' stroke='white' stroke-width='0.5'/%3E%3Cline x1='60' y1='0' x2='0' y2='60' stroke='white' stroke-width='0.5'/%3E%3Cline x1='30' y1='0' x2='30' y2='60' stroke='white' stroke-width='0.3'/%3E%3C/svg%3E");
+  opacity: 0.08;
+}
+.banom-theme-pagar-nusa .banom-hero { border-bottom: 4px solid #8b0000; }
+.banom-theme-pagar-nusa .banom-board-card {
+  border-radius: 2px;
+  border: 1px solid rgba(139, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.08);
+}
+.banom-theme-pagar-nusa .banom-news-card { border-radius: 4px; }
+.banom-theme-pagar-nusa .banom-icon-large {
+  border-radius: 8px;
+  border: 2px solid rgba(139, 0, 0, 0.3);
+  background: rgba(139, 0, 0, 0.15);
+}
+.banom-theme-pagar-nusa .banom-float-emoji { opacity: 0.18; font-size: 3rem; }
+.banom-theme-pagar-nusa .banom-basis-badge strong { color: #ff6347; }
+.banom-theme-pagar-nusa .banom-footer { border-top-color: #8b0000 !important; }
+
+/* --- JATMAN: Spiritual, mystical, deep teal --- */
+.banom-theme-jatman .banom-hero-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='40' cy='40' r='30' fill='none' stroke='white' stroke-width='0.4'/%3E%3Ccircle cx='40' cy='40' r='20' fill='none' stroke='white' stroke-width='0.3'/%3E%3Ccircle cx='40' cy='40' r='10' fill='none' stroke='white' stroke-width='0.3'/%3E%3Ccircle cx='40' cy='40' r='3' fill='white' opacity='0.15'/%3E%3C/svg%3E");
+  opacity: 0.08;
+  background-size: 80px 80px;
+}
+.banom-theme-jatman .banom-board-card { border-radius: 12px; }
+.banom-theme-jatman .banom-news-card { border-radius: 12px; }
+.banom-theme-jatman .banom-icon-large {
+  border-radius: 50%;
+  animation: pulse-light 3s infinite alternate, slowSpin 20s linear infinite;
+}
+.banom-theme-jatman .banom-float-emoji { animation-duration: 12s; }
+
+@keyframes slowSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* --- JQH NU: Quranic, elegant, jade green --- */
+.banom-theme-jqh .banom-hero-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 30 Q30 10 50 30 Q30 50 10 30 Z' fill='none' stroke='white' stroke-width='0.5'/%3E%3Cpath d='M30 10 Q50 30 30 50 Q10 30 30 10 Z' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E");
+  opacity: 0.08;
+}
+.banom-theme-jqh .banom-board-card { border-radius: 12px; }
+.banom-theme-jqh .banom-news-card { border-radius: 12px; }
+.banom-theme-jqh .banom-icon-large { border-radius: 50%; }
+.banom-theme-jqh .banom-hero h1 {
+  text-shadow: 0 2px 20px rgba(9, 121, 105, 0.3);
+}
+
+/* --- PERGUNU: Professional, academic, sapphire --- */
+.banom-theme-pergunu .banom-hero-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='5' y='5' width='50' height='50' rx='4' fill='none' stroke='white' stroke-width='0.4'/%3E%3Cline x1='20' y1='5' x2='20' y2='55' stroke='white' stroke-width='0.2'/%3E%3Cline x1='40' y1='5' x2='40' y2='55' stroke='white' stroke-width='0.2'/%3E%3Cline x1='5' y1='20' x2='55' y2='20' stroke='white' stroke-width='0.2'/%3E%3Cline x1='5' y1='40' x2='55' y2='40' stroke='white' stroke-width='0.2'/%3E%3C/svg%3E");
+  opacity: 0.07;
+}
+.banom-theme-pergunu .banom-board-card { border-radius: 8px; border-top: 3px solid var(--banom-color); }
+.banom-theme-pergunu .banom-news-card { border-radius: 8px; }
+.banom-theme-pergunu .banom-icon-large { border-radius: 12px; }
+.banom-theme-pergunu .banom-hero h1 {
+  text-shadow: 0 2px 20px rgba(15, 82, 186, 0.3);
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 768px) {
+  .banom-hero h1 { font-size: 2.25rem; }
+  .banom-grid-two { grid-template-columns: 1fr; gap: 2rem; }
+  .banom-logo-wrap { width: 180px; height: 180px; }
+  .banom-header { flex-direction: column; gap: 1rem; padding: 1rem; }
+  .banom-nav-right { width: 100%; justify-content: space-between; }
+  .banom-footer-top { flex-direction: column; align-items: flex-start; }
+
+  /* Visi section responsive */
+  .banom-visi-inner { flex-direction: column; gap: 1.5rem; }
+  .banom-visi-icon { width: 60px; height: 60px; }
+  .banom-visi-icon svg { width: 28px; height: 28px; }
+  .banom-visi-text h2 { font-size: 1.4rem; }
+
+  /* Floating emoji smaller on mobile */
+  .banom-float-emoji { font-size: 1.5rem !important; opacity: 0.08 !important; }
+  .banom-float-0 { font-size: 2rem !important; }
+}
+
+@media (max-width: 480px) {
+  .banom-hero { padding: 4rem 1.25rem 3.5rem; }
+  .banom-hero h1 { font-size: 1.75rem; }
+  .banom-hero-tagline { font-size: 0.95rem; }
+  .banom-section-content { padding: 3rem 1.25rem; }
+  .banom-visi-section { padding: 3rem 1.25rem; }
+  .banom-news-grid { grid-template-columns: 1fr; }
+  .banom-gallery-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .banom-gallery-item { height: 140px; }
+}
+
+/* --- ZAKAT CALCULATOR --- */
+.landing-calculator-section {
+  padding: 5rem max(1.5rem, calc((100vw - 72rem) / 2));
+}
+.calc-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+.calc-tab-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  transition: var(--transition-fast);
+}
+.calc-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+.calc-tab-btn.active {
+  background: var(--primary);
+  border-color: var(--primary-light);
+  color: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+.calc-tab-content {
+  animation: calcFadeIn 0.35s ease-out;
+}
+.calc-tab-content.is-hidden {
+  display: none !important;
+}
+@keyframes calcFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 768px) {
+  .calc-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+  .calc-card {
+    padding: 1.25rem !important;
+  }
+}
+
+/* Scroll Reveal Effects */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.reveal-on-scroll.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-delay-100 { transition-delay: 100ms; }
+.reveal-delay-200 { transition-delay: 200ms; }
+.reveal-delay-300 { transition-delay: 300ms; }
+.reveal-delay-400 { transition-delay: 400ms; }
+.reveal-delay-500 { transition-delay: 500ms; }
 

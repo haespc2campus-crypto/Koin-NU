@@ -20,6 +20,11 @@ function buildAuthHook(context) {
     const db = await context.readDb();
     const user = context.tokenUser(request, db);
     if (!user) {
+      if (url.startsWith("/api/table/")) {
+        request.authUser = null;
+        request.authDb = db;
+        return;
+      }
       return send(reply, 401, { error: "Token tidak valid atau sudah kedaluwarsa. Silakan login ulang." });
     }
     // Attach user and db to request for downstream handlers
@@ -125,9 +130,9 @@ export async function registerApiRoutes(app, context) {
     const user = request.authUser;
 
     if (request.method === "GET") {
+      if (!context.canRead(user, table)) return send(reply, 403, { error: "Akses ditolak" });
       // Profile listing requires admin
       if (table === "profiles" && !requireRole(user, ["admin"], reply)) return;
-      if (!context.canRead(user, table)) return send(reply, 403, { error: "Akses ditolak" });
       return context.safePublicRows(table, db[table], user);
     }
 
