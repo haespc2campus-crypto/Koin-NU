@@ -7117,10 +7117,87 @@ function renderLandingPage() {
     ["Digitalisasi", "Merapikan layanan, informasi, dan transparansi organisasi.", `<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="12" y1="2" x2="12" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>`]
   ];
   const institutions = [
-    ["Muslimat NU", "Ruang khidmah perempuan NU untuk keluarga dan masyarakat."],
-    ["Fatayat NU", "Gerak perempuan muda untuk pemberdayaan dan kepedulian sosial."],
-    ["GP Ansor", "Kader muda yang menjaga tradisi, kebangsaan, dan pelayanan umat."],
-    ["IPNU - IPPNU", "Wadah belajar, berjejaring, dan bertumbuh bagi pelajar NU."]
+    {
+      name: "Muslimat NU",
+      tagline: "Ibu Umat, Penggerak Keluarga Nahdliyin",
+      desc: "Wadah berhimpun perempuan NU dewasa yang bergerak di bidang sosial keagamaan, kesehatan ibu & anak, pendidikan PAUD/TPQ, majelis taklim, dan penguatan ekonomi keluarga.",
+      basis: "Perempuan NU (dewasa)",
+      color: "#c7522a",
+      tags: ["Majelis Taklim", "Posyandu", "Santunan", "Koperasi"],
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`
+    },
+    {
+      name: "Fatayat NU",
+      tagline: "Perempuan Muda, Agen Perubahan Umat",
+      desc: "Organisasi perempuan muda NU (maks. 40 tahun) yang fokus pada kaderisasi, isu keperempuanan, pencegahan stunting, pemberdayaan ekonomi kreatif, dan kepemimpinan perempuan.",
+      basis: "Perempuan muda NU (≤40 tahun)",
+      color: "#e07b39",
+      tags: ["Stunting", "Pelatihan UMKM", "Kepemimpinan", "Literasi"],
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M12 14c-6 0-9 3-9 4v1h18v-1c0-1-3-4-9-4z"/></svg>`
+    },
+    {
+      name: "GP Ansor",
+      tagline: "Pemuda Tangguh, Penjaga Tradisi & NKRI",
+      desc: "Gerakan kepemudaan NU (maks. 40 tahun) yang membina kader berjiwa pemimpin, menjaga Aswaja, dan aktif dalam bakti sosial. Memiliki sayap Banser untuk keamanan dan kemanusiaan.",
+      basis: "Pemuda laki-laki NU (≤40 tahun)",
+      color: "#2d6a4f",
+      tags: ["Banser", "Bakti Sosial", "Pengamanan", "Kaderisasi"],
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
+    },
+    {
+      name: "IPNU",
+      tagline: "Pelajar & Santri, Generasi Penerus NU",
+      desc: "Ikatan Pelajar NU untuk pelajar & santri laki-laki (maks. 27 tahun). Fokus pada kaderisasi pelajar, kajian keislaman, literasi, dan pengembangan potensi generasi muda NU.",
+      basis: "Pelajar & santri laki-laki (≤27 tahun)",
+      color: "#1a6b9a",
+      tags: ["Kajian Kitab", "CBP", "Literasi Digital", "Rutinan"],
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`
+    },
+    {
+      name: "IPPNU",
+      tagline: "Pelajar Putri Cerdas, Berkarakter Aswaja",
+      desc: "Ikatan Pelajar Putri NU untuk pelajar & santri perempuan (maks. 27 tahun). Memperkuat ukhuwah, kaderisasi putri, nilai ke-NU-an, dan pengembangan potensi diri generasi muda.",
+      basis: "Pelajar & santri perempuan (≤27 tahun)",
+      color: "#7b3f7e",
+      tags: ["KPP", "Rutinan Yasin", "Ukhuwah", "Kajian"],
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/><path d="M12 14c-5 0-9 2.5-9 4v2h18v-2c0-1.5-4-4-9-4z"/></svg>`
+    },
+    {
+      name: "Pagar Nusa",
+      tagline: "Benteng Budaya, Seni Bela Diri Nahdliyin",
+      desc: "Badan otonom yang melestarikan dan mengembangkan seni beladiri pencak silat khas NU. Berperan dalam pelestarian budaya bangsa dan pembinaan karakter melalui olahraga tradisional.",
+      basis: "Penggiat pencak silat & budaya NU",
+      color: "#5a3e1b",
+      tags: ["Pencak Silat", "Budaya", "Kejuaraan", "Pelatihan"],
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
+    },
+    {
+      name: "JATMAN",
+      tagline: "Wadah Pengamal Tarekat Mu'tabar NU",
+      desc: "Jam'iyyah Ahli Thariqah al-Mu'tabarah an-Nahdliyyah — menghimpun para pengamal dan pengajar tarikat yang mu'tabar (diakui sanadnya) dalam naungan Ahlussunnah wal Jama'ah.",
+      basis: "Pengamal & guru tarikat mu'tabar",
+      color: "#4a5568",
+      tags: ["Tarikat", "Dzikir", "Sanad Ilmu", "Istighotsah"],
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>`
+    },
+    {
+      name: "JQH NU",
+      tagline: "Penjaga Al-Qur'an, Pelestari Tilawah",
+      desc: "Jam'iyyatul Qurra wal Huffazh — wadah para qari'/qari'ah dan hafizh/hafizhah Al-Qur'an NU. Aktif dalam MTQ, pembinaan tilawah, dan kaderisasi penghafal Qur'an di pesantren.",
+      basis: "Qari', qari'ah, hafizh, hafizhah",
+      color: "#2c6e49",
+      tags: ["Tilawah", "Tahfizh", "MTQ", "Pembinaan"],
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`
+    },
+    {
+      name: "Pergunu",
+      tagline: "Guru NU: Mendidik, Mengabdi, Menginspirasi",
+      desc: "Persatuan Guru Nahdlatul Ulama — menghimpun para pendidik dan tenaga pengajar di lingkungan NU. Fokus pada peningkatan kualitas pendidikan Islam dan kesejahteraan guru.",
+      basis: "Guru & pendidik di lingkungan NU",
+      color: "#1d4e89",
+      tags: ["Pendidikan", "Pelatihan Guru", "Ma'arif", "Beasiswa"],
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>`
+    }
   ];
   const events = [
     { day: "05", month: "Jun", title: "Pengajian Selapanan & Kajian Kitab Nashaihul Ibad", time: "19:30 - 22:00 WIB", location: "Serambi Masjid Baiturrahman RT 03" },
@@ -7349,14 +7426,32 @@ function renderLandingPage() {
         <!-- Banom & Lembaga -->
         <section class="landing-institutions landing-section landing-pattern-bg" id="lembaga">
           <div class="landing-heading-row">
-            <div><p class="landing-kicker">Banom & Lembaga</p><h2>Berjalan beriringan,<br /><span>melayani bersama.</span></h2></div>
+            <div>
+              <p class="landing-kicker">Badan Otonom (Banom) NU</p>
+              <h2>Satu Jam'iyyah,<br /><span>Banyak Sayap Khidmah.</span></h2>
+            </div>
+            <p>Banom NU adalah "kamar-kamar" dalam satu rumah besar Nahdlatul Ulama — masing-masing bergerak sesuai basis dan keahliannya, namun berjalan dalam satu garis akidah Aswaja.</p>
           </div>
           <div class="landing-institution-grid">
-            ${institutions.map(([title, copy]) => `
-              <article class="landing-institution-card">
-                <h3>${title}</h3>
-                <p>${copy}</p>
-                <span>Pelajari <b>→</b></span>
+            ${institutions.map(inst => `
+              <article class="landing-institution-card" style="--inst-color: ${inst.color};">
+                <div class="inst-card-header">
+                  <div class="inst-icon-wrap" style="background: ${inst.color}15; color: ${inst.color}; border-color: ${inst.color}30;">
+                    ${inst.icon}
+                  </div>
+                  <div>
+                    <h3>${inst.name}</h3>
+                    <small class="inst-tagline">${inst.tagline}</small>
+                  </div>
+                </div>
+                <p class="inst-desc">${inst.desc}</p>
+                <div class="inst-basis">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  <span>${inst.basis}</span>
+                </div>
+                <div class="inst-tags">
+                  ${inst.tags.map(tag => `<span class="inst-tag" style="background:${inst.color}12; color:${inst.color}; border-color:${inst.color}25;">${tag}</span>`).join("")}
+                </div>
               </article>
             `).join("")}
           </div>
