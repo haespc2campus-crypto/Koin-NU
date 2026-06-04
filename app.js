@@ -6,12 +6,99 @@ import { changePasswordSchema } from "./src/lib/validators.js";
 import { initModals } from "./src/ui/modal.js";
 import confetti from "canvas-confetti";
 
-window.qrcode = qrcode;
-window.MicroModal = MicroModal;
-window.z = z;
-window.nanoid = nanoid;
-window.confetti = confetti;
 initModals();
+
+// === Utility: Debounce ===
+function debounce(fn, delay = 250) {
+  let timer;
+  return function (...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
+// === Utility: Wrap Form Submit (Loading & Double Click Prevention) ===
+async function wrapFormSubmit(event, syncFn) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const errorEl = form.querySelector('.form-error') || form.querySelector('#' + form.id + 'Error');
+
+  if (submitBtn) {
+    if (submitBtn.classList.contains("btn-loading")) return false;
+    submitBtn.classList.add("btn-loading");
+    submitBtn.disabled = true;
+  }
+
+  try {
+    const ok = await syncFn();
+    return ok;
+  } catch (error) {
+    console.error("Submit error:", error);
+    if (errorEl) {
+      errorEl.textContent = "Terjadi kesalahan sistem. Coba lagi.";
+    }
+    return false;
+  } finally {
+    if (submitBtn) {
+      submitBtn.classList.remove("btn-loading");
+      submitBtn.disabled = false;
+    }
+  }
+}
+
+// === Utility: Load Leaflet.js Dynamically ===
+function loadLeaflet(callback) {
+  if (window.L) {
+    callback();
+    return;
+  }
+
+  if (document.getElementById("leaflet-js")) {
+    const timer = setInterval(() => {
+      if (window.L) {
+        clearInterval(timer);
+        callback();
+      }
+    }, 100);
+    return;
+  }
+
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+  link.integrity = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
+  link.crossOrigin = "";
+  document.head.appendChild(link);
+
+  const script = document.createElement("script");
+  script.id = "leaflet-js";
+  script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+  script.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
+  script.crossOrigin = "";
+  script.onload = callback;
+  document.head.appendChild(script);
+}
+
+// === Toast Notification System ===
+let _toastContainer = null;
+function getToastContainer() {
+  if (!_toastContainer || !_toastContainer.isConnected) {
+    _toastContainer = document.createElement("div");
+    _toastContainer.className = "toast-container";
+    document.body.appendChild(_toastContainer);
+  }
+  return _toastContainer;
+}
+function showToast(message, type = "info") {
+  const icons = { error: "❌", success: "✅", warning: "⚠️", info: "ℹ️" };
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `<span class="toast-icon">${icons[type] || icons.info}</span><span class="toast-message">${message}</span><button class="toast-close" aria-label="Tutup">&times;</button>`;
+  toast.querySelector(".toast-close").addEventListener("click", () => toast.remove());
+  getToastContainer().appendChild(toast);
+  setTimeout(() => toast.remove(), 4200);
+}
 
 const sessionKey = "koin-nu-demo-session";
 const authSessionKey = "koin-nu-postgres-auth-session";
@@ -104,9 +191,12 @@ const demoData = {
     { id: 504, title: "Koordinasi Pengurus Ranting", category: "Kegiatan Ranting", date: "2026-05-16", photoName: "koordinasi-ranting.jpg", photoUrl: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=80" }
   ],
   news: [
-    { id: 801, title: "Pengajian Rutin dan Silaturahmi Warga Nahdliyin", category: "Kegiatan Ranting", date: "2026-05-26", excerpt: "Majelis rutin menjadi ruang silaturahmi, ngaji, dan penguatan amaliyah warga.", content: "Pengajian rutin PRNU Karangsalam Kidul II digelar bersama warga sebagai ikhtiar merawat tradisi, memperkuat ukhuwah, dan menghidupkan amaliyah Aswaja An-Nahdliyah di lingkungan ranting.", imageName: "pengajian-rutin.jpg", imageUrl: "https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=900&q=82", status: "published" },
-    { id: 802, title: "Bakti Sosial: Menguatkan Kepedulian dari Lingkungan Terdekat", category: "Sosial", date: "2026-05-20", excerpt: "Gerakan sosial warga diarahkan untuk membantu kebutuhan sekitar secara gotong royong.", content: "Bakti sosial dilaksanakan sebagai wujud khidmah warga NU. Kegiatan ini mengajak jamaah bergerak bersama membantu sesama dari lingkungan terdekat.", imageName: "bakti-sosial.jpg", imageUrl: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=900&q=82", status: "published" },
-    { id: 803, title: "Koordinasi Pengurus untuk Program Khidmah Berkelanjutan", category: "Organisasi", date: "2026-05-16", excerpt: "Pengurus merapikan agenda dakwah, sosial, dan digitalisasi layanan ranting.", content: "Koordinasi pengurus dilakukan untuk menata program kerja, pembagian tugas, dan tindak lanjut layanan umat agar khidmah berjalan lebih rapi dan berkelanjutan.", imageName: "koordinasi-ranting.jpg", imageUrl: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=82", status: "published" }
+    { id: 801, title: "Lailatul Ijtima' PRNU Karangsalam Kidul II Perkuat Silaturahmi & Koin NU", category: "Kegiatan Ranting", date: "2026-05-26", excerpt: "Kegiatan rutin bulanan Lailatul Ijtima' diisi dengan Istighotsah bersama dan penyerahan Koin NU Ranting.", content: "Lailatul Ijtima' kembali digelar oleh Pengurus Ranting Nahdlatul Ulama Karangsalam Kidul II. Bertempat di Masjid Baiturrahman RT 03/RW 03, acara ini dihadiri puluhan warga Nahdliyin. Selain Istighotsah dan yasin tahlil rutin, pertemuan ini juga dimanfaatkan untuk melaporkan secara transparan perolehan Koin NU bulan ini kepada seluruh jemaah, yang nantinya dialihkan untuk program sosial ranting.", imageName: "pengajian-rutin.jpg", imageUrl: "https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=900&q=82", status: "published" },
+    { id: 802, title: "LAZISNU Ranting Salurkan Santunan Bulanan untuk Anak Yatim dan Lansia", category: "Sosial", date: "2026-05-20", excerpt: "Penyaluran dana Koin NU berupa santunan sembako dan biaya sekolah untuk warga yang membutuhkan.", content: "LAZISNU Ranting Karangsalam Kidul II mendistribusikan santunan bulanan kepada belasan anak yatim dan warga lanjut usia kurang mampu di wilayah RT 01 sampai RT 06. Bantuan ini bersumber sepenuhnya dari Koin NU kemasan kaleng yang dikumpulkan secara gotong royong oleh para donatur setia setiap bulannya.", imageName: "bakti-sosial.jpg", imageUrl: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=900&q=82", status: "published" },
+    { id: 803, title: "Rutinan Yasin & Tahlil IPNU IPPNU Karangsalam Kidul II Aktif Kembali", category: "Organisasi", date: "2026-05-16", excerpt: "Rekan-rekanita IPNU-IPPNU giatkan rutinan mingguan demi menjaga tradisi Aswaja di kalangan remaja.", content: "Ikatan Pelajar Nahdlatul Ulama (IPNU) dan Ikatan Pelajar Putri Nahdlatul Ulama (IPPNU) Ranting Karangsalam Kidul II mengadakan rutinan yasinan dan tahlilan bertempat di rumah kader secara bergiliran. Selain memperdalam pembacaan tahlil, kegiatan ini diselingi dengan diskusi kepemimpinan organisasi untuk mempersiapkan kader muda masa depan.", imageName: "koordinasi-ranting.jpg", imageUrl: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=82", status: "published" },
+    { id: 804, title: "GP Ansor & Banser Gotong Royong Aksi Bersih Masjid & Mushola Ranting", category: "Kegiatan Ranting", date: "2026-05-12", excerpt: "Anggota Banser dan GP Ansor bergotong royong membersihkan tempat ibadah menyambut bulan Ramadhan.", content: "GP Ansor Ranting Karangsalam Kidul II bersama satuan Banser bahu-membahu membersihkan area utama Masjid Baiturrahman dan beberapa mushola sekitar. Kegiatan ini bertujuan menciptakan kenyamanan ibadah bagi warga serta memupuk semangat kebersamaan pemuda NU.", imageName: "bakti-sosial.jpg", imageUrl: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=900&q=82", status: "published" },
+    { id: 805, title: "SIKOINNU Resmi Diluncurkan untuk Transparansi Koin NU Ranting", category: "Organisasi", date: "2026-05-08", excerpt: "Digitalisasi administrasi Koin NU resmi digunakan untuk pencatatan donasi yang amanah.", content: "Pengurus Ranting NU Karangsalam Kidul II secara resmi memperkenalkan Sistem Informasi Koin NU (SIKOINNU) sebagai langkah digitalisasi organisasi. Melalui sistem ini, setiap pengambilan koin akan tercatat dengan QR code unik, dan laporan penyalurannya dipaparkan secara berkala pada portal transparansi publik.", imageName: "koordinasi-ranting.jpg", imageUrl: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=82", status: "published" },
+    { id: 806, title: "Muslimat NU Karangsalam Kidul II Gelar Pelatihan UMKM Kuliner Halal", category: "Sosial", date: "2026-05-02", excerpt: "Ibu-ibu Muslimat NU dilatih membuat produk makanan olahan bernilai jual tinggi dengan sertifikasi halal.", content: "Muslimat NU Ranting Karangsalam Kidul II mengadakan pelatihan pembuatan aneka jajanan pasar dan produk kuliner lokal di Sekretariat Ranting. Pelatihan ini juga membekali peserta dengan tata cara pengajuan sertifikasi halal mandiri, guna meningkatkan kemandirian ekonomi keluarga Nahdliyin.", imageName: "pengajian-rutin.jpg", imageUrl: "https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=900&q=82", status: "published" }
   ],
   officers: [
     { id: 301, name: "Ahmad Fauzi", phone: "0812-7000-0101", address: "Jl. Masjid Al-Hikmah No. 4", rt: "01", rw: "03", area: "RT 01/RW 03, RT 04/RW 04, RT 05/RW 04", donorCount: 4, username: "petugas@rantingnu.id", role: "petugas", active: true, note: "Petugas demo utama." },
@@ -119,36 +209,36 @@ const demoData = {
     { id: 308, name: "Rofiq Hidayat", phone: "0819-7000-0808", address: "Kontrakan Pak Harjo", rt: "04", rw: "05", area: "RT 04/RW 05", donorCount: 12, username: "rofiq@rantingnu.id", role: "petugas", active: false, note: "Menunggu pembaruan wilayah tugas." }
   ],
   branchProfile: {
-    branchName: "NU Ranting Al-Hikmah",
-    village: "Karang Makmur",
-    district: "Sukamaju",
-    regency: "Kabupaten Sejahtera",
+    branchName: "PRNU Karangsalam Kidul II",
+    village: "Karangsalam Kidul",
+    district: "Kedungbanteng",
+    regency: "Banyumas",
     province: "Jawa Tengah",
-    secretariatAddress: "Jl. Masjid Al-Hikmah No. 1, Karang Makmur",
-    phone: "0271-555-0199",
-    email: "ranting.alhikmah@nu.id",
-    branchLogo: "logo-ranting-demo.png",
+    secretariatAddress: "Jl. Lapangan Karangsalam Kidul No. 2, Kedungbanteng, Banyumas",
+    phone: "0812-7000-0101",
+    email: "nu.karangsalamkidul2@gmail.com",
+    branchLogo: "",
     nuLogo: "logo-nu-demo.png",
     servicePeriod: "2025 - 2030"
   },
   boardMembers: [
-    { id: 401, position: "Ketua", name: "KH. Muhammad Sholeh", phone: "0812-8100-0101", address: "Jl. Masjid Al-Hikmah No. 2", photo: "ketua.jpg", term: "2025 - 2030", active: true },
-    { id: 402, position: "Wakil Ketua", name: "H. Abdul Latif", phone: "0857-8100-0202", address: "Gang Melati Utara", photo: "wakil-ketua.jpg", term: "2025 - 2030", active: true },
-    { id: 403, position: "Sekretaris", name: "M. Rasyid Ridho", phone: "0821-8100-0303", address: "Perum Ranting Indah C1", photo: "sekretaris.jpg", term: "2025 - 2030", active: true },
-    { id: 404, position: "Wakil Sekretaris", name: "Ahmad Zainuri", phone: "0813-8100-0404", address: "Jl. Pesantren Timur", photo: "wakil-sekretaris.jpg", term: "2025 - 2030", active: true },
-    { id: 405, position: "Bendahara", name: "Hj. Lailatul Badriyah", phone: "0881-8100-0505", address: "Gang Kenanga Selatan", photo: "bendahara.jpg", term: "2025 - 2030", active: true },
-    { id: 406, position: "Wakil Bendahara", name: "Siti Maimunah", phone: "0878-8100-0606", address: "Jl. Lapangan Selatan", photo: "wakil-bendahara.jpg", term: "2025 - 2030", active: true },
-    { id: 407, position: "Admin Sistem", name: "Miftahul Huda", phone: "0819-8100-0707", address: "Balai Ranting NU", photo: "admin-sistem.jpg", term: "2025 - 2030", active: true }
+    { id: 401, position: "Rais Syuriah", name: "Kiai Masruri", phone: "0812-8100-0011", address: "Grumbul Kaliputra RT 01/RW 03", photo: "", term: "2025 - 2030", active: true },
+    { id: 402, position: "Katib Syuriah", name: "Kiai Ahmad Hambali", phone: "0857-8100-0022", address: "Grumbul Karangtawang RT 02/RW 03", photo: "", term: "2025 - 2030", active: true },
+    { id: 403, position: "Ketua Tanfidziyah", name: "KH. Muhammad Sholeh", phone: "0812-8100-0101", address: "Jl. Lapangan Karangsalam Kidul No. 4", photo: "", term: "2025 - 2030", active: true },
+    { id: 404, position: "Sekretaris", name: "M. Rasyid Ridho", phone: "0821-8100-0303", address: "Jl. Lapangan Karangsalam Kidul No. 8", photo: "", term: "2025 - 2030", active: true },
+    { id: 405, position: "Bendahara", name: "Hj. Lailatul Badriyah", phone: "0881-8100-0505", address: "Gang Kenanga RT 05/RW 04", photo: "", term: "2025 - 2030", active: true },
+    { id: 406, position: "Wakil Bendahara", name: "Siti Maimunah", phone: "0878-8100-0606", address: "Jl. Lapangan Selatan RT 06/RW 05", photo: "", term: "2025 - 2030", active: true },
+    { id: 407, position: "Admin Sistem", name: "Miftahul Huda", phone: "0819-8100-0707", address: "Balai Ranting NU", photo: "", term: "2025 - 2030", active: true }
   ],
   systemSettings: {
     appName: "SIKOINNU",
     appSlogan: "Transparan, Amanah, dan Berdampak",
-    branchName: "NU Ranting Al-Hikmah",
+    branchName: "PRNU Karangsalam Kidul II",
     appLogo: "/logo-lazisnu.png",
     primaryColor: "#0b6b3a",
-    secretariatAddress: "Jl. Masjid Al-Hikmah No. 1, Karang Makmur",
-    email: "admin.koinnu@rantingnu.id",
-    adminPhone: "0812-9000-1111",
+    secretariatAddress: "Jl. Lapangan Karangsalam Kidul No. 2, Kedungbanteng, Banyumas",
+    email: "nu.karangsalamkidul2@gmail.com",
+    adminPhone: "0812-7000-0101",
     activeYear: "2026",
     activePeriod: "Januari - Desember 2026",
     monthlyCoinTarget: 20000000,
@@ -267,8 +357,251 @@ const appState = {
   selectedUserId: null,
   userModalMode: null,
   dataSource: "demo",
-  postgresReady: false
+  postgresReady: false,
+  isOffline: !navigator.onLine,
+  syncingOffline: false,
+  pendingSyncCount: 0
 };
+
+// === IndexedDB & Offline Helpers ===
+function isNetworkError(error) {
+  if (error instanceof TypeError || 
+      error.message?.includes("Failed to fetch") || 
+      error.message?.includes("NetworkError") || 
+      error.message?.includes("Load failed") ||
+      error.message?.includes("API 502") ||
+      error.message?.includes("API 503") ||
+      error.message?.includes("API 504") ||
+      error.message?.includes("API 500")) { // Handle major gateway or server crash errors as offline fallback
+    return true;
+  }
+  return false;
+}
+
+function initOfflineDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("sikoinnu_offline_db", 1);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains("db_cache")) {
+        db.createObjectStore("db_cache");
+      }
+      if (!db.objectStoreNames.contains("pending_sync")) {
+        db.createObjectStore("pending_sync", { keyPath: "id", autoIncrement: true });
+      }
+    };
+    request.onsuccess = (event) => resolve(event.target.result);
+    request.onerror = (event) => reject(event.target.error);
+  });
+}
+
+async function saveDbCache(data) {
+  try {
+    const db = await initOfflineDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("db_cache", "readwrite");
+      const store = tx.objectStore("db_cache");
+      store.put(data, "db_data");
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.error("Gagal menyimpan cache ke IndexedDB:", err);
+    return false;
+  }
+}
+
+async function getDbCache() {
+  try {
+    const db = await initOfflineDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("db_cache", "readonly");
+      const store = tx.objectStore("db_cache");
+      const req = store.get("db_data");
+      tx.oncomplete = () => resolve(req.result);
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.error("Gagal mengambil cache dari IndexedDB:", err);
+    return null;
+  }
+}
+
+async function queueOfflineAction(table, action, data) {
+  try {
+    const db = await initOfflineDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("pending_sync", "readwrite");
+      const store = tx.objectStore("pending_sync");
+      store.add({
+        table,
+        action,
+        data,
+        timestamp: new Date().toISOString()
+      });
+      tx.oncomplete = async () => {
+        await updatePendingSyncCount();
+        resolve(true);
+      };
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.error("Gagal menambahkan antrean offline:", err);
+    return false;
+  }
+}
+
+async function getOfflineQueue() {
+  try {
+    const db = await initOfflineDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("pending_sync", "readonly");
+      const store = tx.objectStore("pending_sync");
+      const req = store.getAll();
+      tx.oncomplete = () => resolve(req.result || []);
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.error("Gagal mengambil antrean offline:", err);
+    return [];
+  }
+}
+
+async function deleteOfflineQueueItem(id) {
+  try {
+    const db = await initOfflineDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("pending_sync", "readwrite");
+      const store = tx.objectStore("pending_sync");
+      store.delete(id);
+      tx.oncomplete = async () => {
+        await updatePendingSyncCount();
+        resolve(true);
+      };
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.error("Gagal menghapus antrean offline:", err);
+    return false;
+  }
+}
+
+async function updatePendingSyncCount() {
+  const queue = await getOfflineQueue();
+  appState.pendingSyncCount = queue.length;
+  updateOfflineIndicator();
+}
+
+async function syncOfflineData() {
+  if (appState.syncingOffline) return;
+  const queue = await getOfflineQueue();
+  if (queue.length === 0) {
+    appState.isOffline = false;
+    updateOfflineIndicator();
+    return;
+  }
+
+  if (!navigator.onLine) {
+    showToast("Gagal sinkronisasi. Perangkat masih offline.", "error");
+    return;
+  }
+
+  appState.syncingOffline = true;
+  updateOfflineIndicator();
+  showToast(`Sedang menyelaraskan ${queue.length} transaksi offline...`, "info");
+
+  let successCount = 0;
+  let failCount = 0;
+
+  for (const item of queue) {
+    try {
+      if (item.action === "POST") {
+        await internalRequest(`table/${item.table}`, {
+          method: "POST",
+          body: JSON.stringify(item.data)
+        });
+      } else if (item.action === "DELETE") {
+        await internalRequest(`table/${item.table}/${encodeURIComponent(item.data.id)}`, {
+          method: "DELETE"
+        });
+      }
+      await deleteOfflineQueueItem(item.id);
+      successCount++;
+    } catch (err) {
+      if (isNetworkError(err)) {
+        console.warn("Koneksi terputus saat sinkronisasi offline:", err);
+        failCount = queue.length - successCount;
+        break;
+      } else {
+        console.error("Gagal sinkronisasi item, dilewati:", err);
+        await deleteOfflineQueueItem(item.id);
+        showToast(`Item dilewati karena error: ${err.message}`, "error");
+      }
+    }
+  }
+
+  appState.syncingOffline = false;
+  appState.isOffline = !navigator.onLine;
+
+  if (successCount > 0) {
+    showToast(`Berhasil menyelaraskan ${successCount} transaksi offline.`, "success");
+    await loadInternalData();
+    render();
+  } else if (failCount > 0) {
+    showToast(`Gagal menyelaraskan ${failCount} transaksi. Periksa koneksi Anda.`, "error");
+    updateOfflineIndicator();
+  } else {
+    updateOfflineIndicator();
+  }
+}
+
+function updateOfflineIndicator() {
+  const badge = document.querySelector("#networkStatusBadge");
+  if (!badge) return;
+
+  badge.className = "network-badge";
+  const label = badge.querySelector("span:not(.dot)");
+  
+  if (appState.syncingOffline) {
+    badge.classList.add("syncing");
+    if (label) label.textContent = "Menyelaraskan...";
+  } else if (appState.isOffline) {
+    badge.classList.add("offline");
+    if (label) label.textContent = `Offline (${appState.pendingSyncCount || 0} tertunda)`;
+  } else {
+    badge.classList.add("online");
+    if (label) label.textContent = "Online";
+  }
+
+  updateOfflineAlertBanner();
+}
+
+function renderOfflineAlertBanner() {
+  if (appState.pendingSyncCount > 0) {
+    return `
+      <div class="offline-alert-banner">
+        <div>
+          <strong>${appState.pendingSyncCount} transaksi disimpan secara lokal</strong>
+          <p>Koneksi internet Anda sedang terganggu. Transaksi akan disinkronkan otomatis ketika online, atau klik "Sinkronkan Sekarang".</p>
+        </div>
+        <button class="primary-button compact" id="syncOfflineNowButton" type="button" ${appState.syncingOffline ? "disabled" : ""}>
+          ${appState.syncingOffline ? "Menghubungkan..." : "Sinkronkan Sekarang"}
+        </button>
+      </div>
+    `;
+  }
+  return "";
+}
+
+function updateOfflineAlertBanner() {
+  const container = document.querySelector("#offlineAlertBannerContainer");
+  if (container) {
+    container.innerHTML = renderOfflineAlertBanner();
+    document.querySelector("#syncOfflineNowButton")?.addEventListener("click", () => {
+      syncOfflineData();
+    });
+  }
+}
 
 function getPostgresConfig() { return { url: '', anonKey: '' }; }
 function hasPostgresConfig() { return false; }
@@ -298,7 +631,7 @@ function getNameInitials(name = '') { return String(name).trim().split(/\s+/).fi
 function isDisplayablePhotoUrl(url = '') { return /^(https?:\/\/|data:image\/|blob:|\/)/i.test(String(url).trim()); }
 function renderBoardAvatar(member, size = '') { const name = member?.name || 'Pengurus'; const photo = isDisplayablePhotoUrl(member?.photo) ? String(member.photo).trim() : ''; return `<span class="board-avatar ${size}" aria-label="Foto ${escapeHtml(name)}"><span class="board-avatar-fallback">${escapeHtml(getNameInitials(name))}</span>${photo ? `<img src="${escapeHtml(photo)}" alt="Foto ${escapeHtml(name)}" loading="lazy" onerror="this.remove()" />` : ''}</span>`; }
 function renderBoardPhotoPreview(member) { return `<div class="board-photo-preview">${renderBoardAvatar(member, 'large')}<span>${member?.photo && isDisplayablePhotoUrl(member.photo) ? 'Foto pengurus saat ini' : 'Avatar inisial digunakan jika foto belum tersedia.'}</span></div>`; }
-function bindImagePreview(inputSelector, previewSelector, errorSelector) { document.querySelector(inputSelector)?.addEventListener('change', (event) => { const file = event.target.files?.[0]; const preview = document.querySelector(previewSelector); const error = document.querySelector(errorSelector); const message = validateImageFile(file); if (error) error.textContent = message; if (!preview || !file || message) { if (message) event.target.value = ''; return; } preview.innerHTML = renderPhotoPreview(URL.createObjectURL(file), file.name); }); }
+function bindImagePreview(inputSelector, previewSelector, errorSelector) { document.querySelector(inputSelector)?.addEventListener('change', (event) => { const file = event.target.files?.[0]; const preview = document.querySelector(previewSelector); const error = document.querySelector(errorSelector); const message = validateImageFile(file); if (error) error.textContent = message; if (!preview || !file || message) { if (message) event.target.value = ''; return; } const prevImg = preview.querySelector('img[src^="blob:"]'); if (prevImg) URL.revokeObjectURL(prevImg.src); const blobUrl = URL.createObjectURL(file); preview.innerHTML = renderPhotoPreview(blobUrl, file.name); }); }
 async function postgresAuthRequest() { throw new Error('Reset password belum tersedia di auth internal.'); }
 async function fetchProfileForAuthUser(authUser) { return authUser; }
 async function restorePostgresSession() { const session = getSession(); if (session?.token) await loadInternalData(); return session; }
@@ -512,12 +845,80 @@ async function loadInternalData() {
     await hydratePrivatePhotoUrls();
     appState.dataSource = "internal";
     appState.postgresReady = true;
+    appState.isOffline = false;
+    
+    // Save to offline cache
+    await saveDbCache(data);
+    
+    // Process pending sync in the background if we have any
+    const queue = await getOfflineQueue();
+    if (queue.length > 0) {
+      syncOfflineData();
+    }
   } catch (error) {
+    if (isNetworkError(error)) {
+      console.warn("Koneksi offline, mencoba memuat database dari cache IndexedDB.");
+      const cached = await getDbCache();
+      if (cached) {
+        mapDbToAppState(cached);
+        await hydratePrivatePhotoUrls();
+        appState.dataSource = "internal";
+        appState.postgresReady = true;
+        appState.isOffline = true;
+        
+        // Merge offline pending pickups and filter out offline deleted pickups
+        const queue = await getOfflineQueue();
+        const pendingPickups = queue.filter((x) => x.table === "pengambilan_koin" && x.action === "POST");
+        const deletedIds = new Set(queue.filter((x) => x.table === "pengambilan_koin" && x.action === "DELETE").map((x) => x.data.id));
+        
+        if (deletedIds.size > 0) {
+          appState.pickups = appState.pickups.filter((p) => !deletedIds.has(p.id));
+        }
+        
+        if (pendingPickups.length > 0) {
+          const pet = new Map(appState.officers.map((o) => [o.id, o]));
+          const don = new Map(appState.donors.map((d) => [d.id, d]));
+          const mappedPending = pendingPickups.map((p) => {
+            const item = p.data;
+            const donor = don.get(item.donatur_id);
+            const officer = pet.get(item.petugas_id);
+            return {
+              id: item.id,
+              transactionNo: item.nomor_transaksi,
+              donorId: item.donatur_id,
+              donorName: donor?.name || "Donatur",
+              donorAddress: donor?.address || "",
+              date: item.tanggal,
+              amount: Number(item.nominal || 0),
+              method: item.metode_pembayaran,
+              status: item.status_verifikasi,
+              note: item.catatan_petugas || "",
+              proofPhotoPath: item.bukti_foto_path || "",
+              proofPhotoUrl: item.bukti_foto_path ? null : item.bukti_foto_url || null,
+              proofPhotoName: item.bukti_foto_nama || "",
+              officer: officer?.name || "",
+              officerEmail: officer?.username || "",
+              verificationAudit: [],
+              notificationStatus: item.status_notifikasi || "belum_dikirim",
+              notificationAt: item.waktu_notifikasi || "",
+              notificationNote: item.catatan_notifikasi || "",
+              notificationHistory: item.riwayat_notifikasi || [],
+              _offline: true
+            };
+          });
+          appState.pickups = [...mappedPending, ...appState.pickups];
+        }
+        
+        showToast("Mode Offline: Menggunakan data lokal terakhir.", "warning");
+        return;
+      }
+    }
     console.warn("Gagal memuat database internal, memakai mode demo.", error);
     appState.dataSource = "demo";
     appState.postgresReady = false;
   }
 }
+
 
 function toDbRows(table) {
   const officerIdByEmail = new Map(appState.officers.map((officer) => [officer.username, officer.id]));
@@ -687,39 +1088,65 @@ function toDbRows(table) {
 
 async function syncTableToPostgres(table) {
   if (!appState.postgresReady) {
-    return;
+    return true;
   }
 
   const rows = toDbRows(table);
   if (!rows.length) {
-    return;
+    return true;
   }
 
   try {
     await internalRequest(`table/${table}`, { method: "POST", body: JSON.stringify(rows) });
+    return true;
   } catch (error) {
     console.warn(`Gagal sinkron ${table}`, error);
+    showToast(`Gagal menyimpan data ${table}. Perubahan mungkin belum tersimpan.`, "error");
+    return false;
   }
 }
 
 async function syncRowToPostgres(table, item) {
-  if (!appState.postgresReady || !item || !item.id) {
-    return;
+  if (!appState.postgresReady && !appState.isOffline) {
+    return true;
   }
   const rows = toDbRows(table);
   const dbRow = rows.find((r) => String(r.id) === String(item.id));
   if (!dbRow) {
-    return;
+    return true;
   }
+
+  // If already offline, queue and return true immediately
+  if (appState.isOffline) {
+    await queueOfflineAction(table, "POST", dbRow);
+    showToast(`Offline: Transaksi disimpan secara lokal.`, "warning");
+    return true;
+  }
+
   try {
     await internalRequest(`table/${table}`, { method: "POST", body: JSON.stringify(dbRow) });
+    return true;
   } catch (error) {
+    if (isNetworkError(error)) {
+      appState.isOffline = true;
+      await queueOfflineAction(table, "POST", dbRow);
+      showToast(`Koneksi terputus. Transaksi disimpan secara lokal.`, "warning");
+      return true;
+    }
     console.warn(`Gagal sinkron baris ${table} id ${item.id}`, error);
+    showToast(`Gagal menyimpan perubahan: ${error.message}`, "error");
+    return false;
   }
 }
 
 async function deleteRowFromPostgres(table, id) {
-  if (!appState.postgresReady || id === null || id === undefined) {
+  if (!appState.postgresReady && !appState.isOffline) {
+    return true;
+  }
+
+  if (appState.isOffline) {
+    await queueOfflineAction(table, "DELETE", { id });
+    showToast(`Offline: Penghapusan disimpan secara lokal.`, "warning");
     return true;
   }
 
@@ -727,14 +1154,22 @@ async function deleteRowFromPostgres(table, id) {
     await internalRequest(`table/${table}/${encodeURIComponent(id)}`, { method: "DELETE" });
     return true;
   } catch (error) {
+    if (isNetworkError(error)) {
+      appState.isOffline = true;
+      await queueOfflineAction(table, "DELETE", { id });
+      showToast(`Koneksi terputus. Penghapusan disimpan secara lokal.`, "warning");
+      return true;
+    }
     console.warn(`Gagal menghapus ${table}`, error);
+    showToast(`Gagal menghapus data: ${error.message}`, "error");
     return false;
   }
 }
 
+
 async function syncVerificationAuditToPostgres(pickupId, audit, session) {
   if (!appState.postgresReady) {
-    return;
+    return true;
   }
   try {
     await internalRequest("table/verifikasi_setoran", {
@@ -750,8 +1185,10 @@ async function syncVerificationAuditToPostgres(pickupId, audit, session) {
         bukti_setoran_nama: audit.depositPhotoName || null
       }])
     });
+    return true;
   } catch (error) {
     console.warn("Gagal menyimpan audit verifikasi", error);
+    return false;
   }
 }
 
@@ -1241,12 +1678,44 @@ function getVisiblePickups(session) {
 }
 
 function getSummaryCards(role) {
+  const now = new Date();
+  const currentYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  // 1. Total koin bulan ini
+  let monthlyCoins = appState.pickups
+    .filter((p) => p.date.startsWith(currentYm) && p.status === "Disetujui Bendahara")
+    .reduce((sum, p) => sum + p.amount, 0);
+  
+  if (monthlyCoins === 0) {
+    const months = [...new Set(appState.pickups.map((p) => p.date.substring(0, 7)))].sort();
+    if (months.length > 0) {
+      const latestMonth = months[months.length - 1];
+      monthlyCoins = appState.pickups
+        .filter((p) => p.date.startsWith(latestMonth) && p.status === "Disetujui Bendahara")
+        .reduce((sum, p) => sum + p.amount, 0);
+    }
+  }
+
+  // 2. Donatur aktif
+  const activeDonors = appState.donors.filter((d) => d.active).length;
+
+  // 3. Total petugas
+  const totalOfficers = appState.officers.filter((o) => o.active).length;
+
+  // 4. Setoran menunggu verifikasi
+  const pendingDeposits = appState.officerDeposits.filter((d) => d.status === "Menunggu Verifikasi").length;
+
+  // 5. Dana tersalurkan
+  const distributedFunds = appState.distributions
+    .filter((d) => d.status === "Disalurkan")
+    .reduce((sum, d) => sum + d.amount, 0);
+
   const cards = [
-    { label: "Total koin bulan ini", value: formatRupiah(demoData.totals.monthlyCoins), hint: "+10% dari April", accent: "green" },
-    { label: "Donatur aktif", value: demoData.totals.activeDonors.toLocaleString("id-ID"), hint: "24 lingkungan", accent: "blue" },
-    { label: "Total petugas", value: demoData.totals.officers.toLocaleString("id-ID"), hint: "16 aktif lapangan", accent: "teal" },
-    { label: "Setoran menunggu verifikasi", value: demoData.totals.pendingDeposits.toLocaleString("id-ID"), hint: "Perlu dicek bendahara", accent: "amber" },
-    { label: "Dana tersalurkan", value: formatRupiah(demoData.totals.distributedFunds), hint: "4 program sosial", accent: "emerald" }
+    { label: "Total koin bulan ini", value: formatRupiah(monthlyCoins), hint: "Tervalidasi Bendahara", accent: "green" },
+    { label: "Donatur aktif", value: activeDonors.toLocaleString("id-ID"), hint: "Basis data ranting", accent: "blue" },
+    { label: "Total petugas", value: totalOfficers.toLocaleString("id-ID"), hint: "Petugas aktif lapangan", accent: "teal" },
+    { label: "Setoran menunggu verifikasi", value: pendingDeposits.toLocaleString("id-ID"), hint: "Perlu cek Bendahara", accent: "amber" },
+    { label: "Dana tersalurkan", value: formatRupiah(distributedFunds), hint: "Penyaluran aktif", accent: "emerald" }
   ];
 
   if (role === "bendahara") {
@@ -1254,11 +1723,35 @@ function getSummaryCards(role) {
   }
 
   if (role === "petugas") {
+    const session = getSession();
+    const myEmail = session?.email || "petugas@rantingnu.id";
+    const myName = appState.officers.find((o) => o.username === myEmail)?.name || "Petugas Demo";
+
+    // Koin diambil bulan ini oleh petugas ini
+    let myMonthlyCoins = appState.pickups
+      .filter((p) => p.officer === myName && p.date.startsWith(currentYm) && p.status === "Disetujui Bendahara")
+      .reduce((sum, p) => sum + p.amount, 0);
+    if (myMonthlyCoins === 0) {
+      const months = [...new Set(appState.pickups.map((p) => p.date.substring(0, 7)))].sort();
+      if (months.length > 0) {
+        const latestMonth = months[months.length - 1];
+        myMonthlyCoins = appState.pickups
+          .filter((p) => p.officer === myName && p.date.startsWith(latestMonth) && p.status === "Disetujui Bendahara")
+          .reduce((sum, p) => sum + p.amount, 0);
+      }
+    }
+
+    // Donatur aktif area petugas ini
+    const myDonors = appState.donors.filter((d) => d.officer === myName && d.active).length;
+
+    // Setoran belum diverifikasi
+    const myPendingPickups = appState.pickups.filter((p) => p.officer === myName && p.status === "Menunggu Verifikasi").length;
+
     return [
-      { label: "Koin diambil bulan ini", value: formatRupiah(3250000), hint: "5 area dampingan", accent: "green" },
-      { label: "Donatur aktif area saya", value: "82", hint: "RT 04, 05, 06", accent: "blue" },
-      { label: "Setoran perlu dikirim", value: "2", hint: "Target hari ini", accent: "amber" },
-      { label: "Total petugas ranting", value: demoData.totals.officers.toLocaleString("id-ID"), hint: "Koordinasi aktif", accent: "teal" }
+      { label: "Koin diambil bulan ini", value: formatRupiah(myMonthlyCoins), hint: "Area dampingan saya", accent: "green" },
+      { label: "Donatur aktif area saya", value: myDonors.toLocaleString("id-ID"), hint: "Tanggung jawab saya", accent: "blue" },
+      { label: "Setoran belum diverifikasi", value: myPendingPickups.toLocaleString("id-ID"), hint: "Menunggu bendahara", accent: "amber" },
+      { label: "Total petugas ranting", value: totalOfficers.toLocaleString("id-ID"), hint: "Koordinasi aktif", accent: "teal" }
     ];
   }
 
@@ -1300,10 +1793,38 @@ function renderSummaryCards(role) {
   `).join("");
 }
 
-function renderIncomeChart() {
-  const max = Math.max(...demoData.income.map((item) => item.amount));
+function getIncomeHistory() {
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
+  const now = new Date();
+  const history = [];
 
-  return demoData.income.map((item) => `
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const amount = appState.pickups
+      .filter((p) => p.date.startsWith(ym) && p.status === "Disetujui Bendahara")
+      .reduce((sum, p) => sum + p.amount, 0);
+    
+    history.push({
+      ym,
+      month: monthNames[d.getMonth()],
+      amount
+    });
+  }
+
+  const totalAmount = history.reduce((sum, item) => sum + item.amount, 0);
+  if (totalAmount === 0) {
+    return demoData.income;
+  }
+
+  return history;
+}
+
+function renderIncomeChart() {
+  const history = getIncomeHistory();
+  const max = Math.max(...history.map((item) => item.amount)) || 1;
+
+  return history.map((item) => `
     <div class="chart-column">
       <div class="bar-track">
         <span class="bar-fill" style="height: ${Math.round((item.amount / max) * 100)}%"></span>
@@ -1356,6 +1877,11 @@ function renderAppShell(session, title, content) {
   const path = window.location.pathname;
   document.title = `${brand.name} | ${title}`;
 
+  // Preserve focus and cursor position
+  const activeId = document.activeElement ? document.activeElement.id : null;
+  const selectionStart = document.activeElement ? document.activeElement.selectionStart : null;
+  const selectionEnd = document.activeElement ? document.activeElement.selectionEnd : null;
+
   app.innerHTML = `
     <section class="app-layout">
       <aside class="sidebar" aria-label="Navigasi utama">
@@ -1387,6 +1913,17 @@ function renderAppShell(session, title, content) {
             <h1>${title}</h1>
           </div>
           <div class="topbar-user">
+            <button id="networkStatusBadge" class="network-badge ${appState.syncingOffline ? "syncing" : appState.isOffline ? "offline" : "online"}" type="button" title="Klik untuk sinkronisasi manual">
+              <span class="dot"></span>
+              <span>
+                ${appState.syncingOffline 
+                  ? "Menyelaraskan..." 
+                  : appState.isOffline 
+                    ? `Offline (${appState.pendingSyncCount || 0})` 
+                    : "Online"
+                }
+              </span>
+            </button>
             <span>${labelRole(session.role)}</span>
             <strong>${escapeHtml(session.email)}</strong>
           </div>
@@ -1396,6 +1933,17 @@ function renderAppShell(session, title, content) {
       </section>
     </section>
   `;
+
+  // Restore focus and cursor position
+  if (activeId) {
+    const el = document.getElementById(activeId);
+    if (el) {
+      el.focus();
+      if (selectionStart !== null && selectionEnd !== null && (el.type === "text" || el.type === "search" || el.type === "textarea")) {
+        el.setSelectionRange(selectionStart, selectionEnd);
+      }
+    }
+  }
 
   document.querySelectorAll("[data-nav]").forEach((button) => {
     button.addEventListener("click", () => navigate(button.dataset.nav));
@@ -2172,10 +2720,10 @@ function bindDonorEvents(session) {
   const rw = document.querySelector("#donorRw");
   const status = document.querySelector("#donorStatus");
 
-  search?.addEventListener("input", (event) => {
+  search?.addEventListener("input", debounce((event) => {
     appState.donorSearch = event.target.value;
     renderDonors();
-  });
+  }, 250));
   rt?.addEventListener("change", (event) => {
     appState.donorRt = event.target.value;
     renderDonors();
@@ -2207,7 +2755,7 @@ function bindDonorEvents(session) {
       if (button.dataset.donorQrAction === "print") printDonorQrLabels([donor]);
       if (button.dataset.donorQrAction === "regenerate") {
         ensureDonorQr(donor, true);
-        syncTableToPostgres("donatur");
+        syncRowToPostgres("donatur", donor);
         renderDonors();
       }
     });
@@ -2266,7 +2814,7 @@ function closeDonorModal() {
   renderDonors();
 }
 
-function handleDonorSubmit(event) {
+async function handleDonorSubmit(event) {
   event.preventDefault();
 
   const form = new FormData(event.currentTarget);
@@ -2304,8 +2852,10 @@ function handleDonorSubmit(event) {
     ];
   }
 
-  syncRowToPostgres("donatur", targetDonor);
-  closeDonorModal();
+  const ok = await wrapFormSubmit(event, () => syncRowToPostgres("donatur", targetDonor));
+  if (ok) {
+    closeDonorModal();
+  }
 }
 
 async function handleDonorDelete() {
@@ -2383,7 +2933,7 @@ function renderPickupTable(pickups, session) {
   const rows = pickups.map((pickup) => `
     <tr>
       <td>
-        <strong>${escapeHtml(pickup.transactionNo)}</strong>
+        <strong>${escapeHtml(pickup.transactionNo)} ${pickup._offline ? `<span class="offline-sync-indicator" title="Disimpan secara lokal, belum disinkronkan">Lokal</span>` : ""}</strong>
         <span>${formatDateId(pickup.date)}</span>
       </td>
       <td>
@@ -2402,7 +2952,7 @@ function renderPickupTable(pickups, session) {
   const cards = pickups.map((pickup) => `
     <article class="pickup-card">
       <div>
-        <strong>${escapeHtml(pickup.donorName)}</strong>
+        <strong>${escapeHtml(pickup.donorName)} ${pickup._offline ? `<span class="offline-sync-indicator" title="Disimpan secara lokal, belum disinkronkan">Lokal</span>` : ""}</strong>
         <span>${escapeHtml(pickup.transactionNo)} - ${formatDateId(pickup.date)}</span>
       </div>
       <div class="pickup-card-meta">
@@ -2829,6 +3379,10 @@ function renderPickups() {
       </div>
     </section>
 
+    <div id="offlineAlertBannerContainer">
+      ${renderOfflineAlertBanner()}
+    </div>
+
     ${renderPickupStats(pickups)}
 
     <section class="panel pickup-panel">
@@ -2884,6 +3438,9 @@ function renderPickups() {
 }
 
 function bindPickupEvents(session) {
+  document.querySelector("#syncOfflineNowButton")?.addEventListener("click", () => {
+    syncOfflineData();
+  });
   document.querySelector("#addPickupButton")?.addEventListener("click", () => {
     appState.pickupPresetDonorId = null;
     openPickupModal("add");
@@ -2892,10 +3449,10 @@ function bindPickupEvents(session) {
   document.querySelectorAll("[data-close-pickup-scanner]").forEach((button) => button.addEventListener("click", closePickupScanner));
   document.querySelector("#findDonorByCodeButton")?.addEventListener("click", () => selectDonorFromQr(document.querySelector("#manualDonorCode")?.value, session));
 
-  document.querySelector("#pickupSearch")?.addEventListener("input", (event) => {
+  document.querySelector("#pickupSearch")?.addEventListener("input", debounce((event) => {
     appState.pickupSearch = event.target.value;
     renderPickups();
-  });
+  }, 250));
 
   document.querySelector("#pickupDate")?.addEventListener("change", (event) => {
     appState.pickupDate = event.target.value;
@@ -3107,12 +3664,14 @@ async function handlePickupSubmit(event, session) {
     ];
   }
 
-  syncRowToPostgres("pengambilan_koin", targetPickup);
-  appState.pickupModalMode = null;
-  appState.selectedPickupId = null;
-  appState.pickupPresetDonorId = null;
-  appState.pickupSuccessId = isNewPickup ? savedPickupId : null;
-  renderPickups();
+  const ok = await wrapFormSubmit(event, () => syncRowToPostgres("pengambilan_koin", targetPickup));
+  if (ok) {
+    appState.pickupModalMode = null;
+    appState.selectedPickupId = null;
+    appState.pickupPresetDonorId = null;
+    appState.pickupSuccessId = isNewPickup ? savedPickupId : null;
+    renderPickups();
+  }
 }
 
 async function handlePickupDelete() {
@@ -3459,10 +4018,10 @@ function bindVerificationEvents(session) {
     });
   });
 
-  document.querySelector("#verificationSearch")?.addEventListener("input", (event) => {
+  document.querySelector("#verificationSearch")?.addEventListener("input", debounce((event) => {
     appState.verificationSearch = event.target.value;
     renderVerification();
-  });
+  }, 250));
 
   document.querySelector("#verificationDate")?.addEventListener("change", (event) => {
     appState.verificationDate = event.target.value;
@@ -3556,10 +4115,22 @@ async function handleVerificationSubmit(event, session) {
     verificationAudit: [...(pickup.verificationAudit || []), audit]
   } : pickup);
 
-  syncTableToPostgres("pengambilan_koin");
-  syncVerificationAuditToPostgres(appState.selectedVerificationId, audit, session);
-  appState.verificationTab = nextStatus;
-  closeVerificationModal();
+  const updatedPickup = appState.pickups.find((p) => p.id === appState.selectedVerificationId);
+  const ok = await wrapFormSubmit(event, async () => {
+    let success = true;
+    if (updatedPickup) {
+      success = await syncRowToPostgres("pengambilan_koin", updatedPickup);
+    }
+    if (success) {
+      success = await syncVerificationAuditToPostgres(appState.selectedVerificationId, audit, session);
+    }
+    return success;
+  });
+
+  if (ok) {
+    appState.verificationTab = nextStatus;
+    closeVerificationModal();
+  }
 }
 
 function getReportBasePickups(session) {
@@ -4131,7 +4702,7 @@ function renderOfficerDeposits() {
 
 function bindOfficerDepositEvents(session) {
   document.querySelector("#addOfficerDepositButton")?.addEventListener("click", () => { appState.officerDepositModalMode = "add"; renderOfficerDeposits(); });
-  [["#officerDepositSearch","officerDepositSearch","input"],["#officerDepositOfficer","officerDepositOfficer","change"],["#officerDepositDate","officerDepositDate","change"],["#officerDepositStatus","officerDepositStatus","change"]].forEach(([selector,key,event]) => document.querySelector(selector)?.addEventListener(event, (e) => { appState[key] = e.target.value; renderOfficerDeposits(); }));
+  [["#officerDepositSearch","officerDepositSearch","input"],["#officerDepositOfficer","officerDepositOfficer","change"],["#officerDepositDate","officerDepositDate","change"],["#officerDepositStatus","officerDepositStatus","change"]].forEach(([selector,key,event]) => document.querySelector(selector)?.addEventListener(event, event === "input" ? debounce((e) => { appState[key] = e.target.value; renderOfficerDeposits(); }, 250) : (e) => { appState[key] = e.target.value; renderOfficerDeposits(); }));
   document.querySelectorAll("[data-officer-deposit-action]").forEach((button) => button.addEventListener("click", () => { appState.officerDepositModalMode = button.dataset.officerDepositAction; appState.selectedOfficerDepositId = Number(button.dataset.id); renderOfficerDeposits(); }));
   document.querySelectorAll("[data-close-officer-deposit-modal]").forEach((button) => button.addEventListener("click", () => { appState.officerDepositModalMode = null; appState.selectedOfficerDepositId = null; renderOfficerDeposits(); }));
   document.querySelector("#officerDepositForm")?.addEventListener("submit", (event) => handleOfficerDepositSubmit(event, session));
@@ -4159,7 +4730,12 @@ async function handleOfficerDepositSubmit(event, session) {
     targetItem = { id: Date.now(), ...payload };
     appState.officerDeposits = [targetItem, ...appState.officerDeposits];
   }
-  syncRowToPostgres("setoran_petugas", targetItem); appState.officerDepositModalMode = null; appState.selectedOfficerDepositId = null; renderOfficerDeposits();
+  const ok = await wrapFormSubmit(event, () => syncRowToPostgres("setoran_petugas", targetItem));
+  if (ok) {
+    appState.officerDepositModalMode = null;
+    appState.selectedOfficerDepositId = null;
+    renderOfficerDeposits();
+  }
 }
 
 async function handleOfficerDepositDelete() { if (!await deleteRowFromPostgres("setoran_petugas", appState.selectedOfficerDepositId)) return; appState.officerDeposits = appState.officerDeposits.filter((item) => item.id !== appState.selectedOfficerDepositId); appState.officerDepositModalMode = null; appState.selectedOfficerDepositId = null; renderOfficerDeposits(); }
@@ -4177,8 +4753,8 @@ function renderLazisnuDepositModal() {
   <label class="field"><span>Nomor setoran</span><input name="depositNo" value="${escapeHtml(values.depositNo)}" readonly /></label><label class="field"><span>Tanggal setor</span><input name="date" type="date" value="${escapeHtml(values.date)}" ${readonly ? "readonly" : ""} required /></label><label class="field"><span>Tujuan setoran</span><select name="destination" ${readonly ? "disabled" : ""}>${["LAZISNU Ranting","MWC LAZISNU","PC LAZISNU"].map((value) => `<option ${values.destination === value ? "selected" : ""}>${value}</option>`).join("")}</select></label><label class="field"><span>Nama penerima/petugas LAZISNU</span><input name="recipientName" value="${escapeHtml(values.recipientName)}" ${readonly ? "readonly" : ""} required /></label><label class="field"><span>Nominal setor</span><input name="amount" type="number" min="1" step="1000" value="${escapeHtml(values.amount)}" ${readonly ? "readonly" : ""} required /></label><label class="field"><span>Metode setor</span><select name="method" ${readonly ? "disabled" : ""}>${["Tunai","Transfer","QRIS"].map((value) => `<option ${values.method === value ? "selected" : ""}>${value}</option>`).join("")}</select></label><label class="field"><span>Nomor bukti/kwitansi</span><input name="receiptNo" value="${escapeHtml(values.receiptNo)}" ${readonly ? "readonly" : ""} /></label><label class="field"><span>Status</span><select name="status" ${readonly ? "disabled" : ""}>${["Draft","Sudah Disetor","Batal"].map((value) => `<option ${values.status === value ? "selected" : ""}>${value}</option>`).join("")}</select></label><label class="field full"><span>Catatan</span><textarea name="note" ${readonly ? "readonly" : ""}>${escapeHtml(values.note)}</textarea></label><label class="field full"><span>Bukti setor</span>${readonly ? "" : `<input name="proofPhoto" id="lazisnuDepositProof" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />`}<small>Opsional. Maksimal 2 MB.</small></label><div class="full" id="lazisnuDepositPreview">${renderPhotoPreview(values.proofPhotoUrl, values.proofPhotoName || "Bukti setor LAZISNU")}</div></div><p class="form-error" id="lazisnuDepositFormError"></p><div class="modal-actions"><button class="ghost-button" data-close-lazisnu-deposit-modal type="button">${readonly ? "Tutup" : "Batal"}</button>${readonly ? "" : `<button class="primary-button compact" type="submit">Simpan Setoran</button>`}</div></form></div>`;
 }
 
-function renderLazisnuDeposits() { const session = getSession(); if (!session?.role) return navigate("/login"); const items = getVisibleLazisnuDeposits(); renderAppShell(session, "Setor ke LAZISNU", `<section class="lazisnu-deposit-hero"><div><p class="eyebrow">Kas Ranting ke LAZISNU</p><h2>Catat dana yang disetorkan ke LAZISNU, MWC, atau PCNU.</h2><p>Bendahara dan admin mengelola bukti penyerahan dana dari kas ranting.</p></div>${canManageLazisnuDeposits(session.role) ? `<button class="primary-button compact" id="addLazisnuDepositButton" type="button">Tambah Setoran</button>` : ""}</section>${renderCashSummary()}<section class="panel lazisnu-deposit-panel"><div class="lazisnu-deposit-toolbar"><label class="search-field"><span>Cari setoran</span><input id="lazisnuDepositSearch" value="${escapeHtml(appState.lazisnuDepositSearch)}" placeholder="Nomor setoran atau penerima" /></label><label><span>Tujuan</span><select id="lazisnuDepositDestination"><option value="all">Semua tujuan</option>${["LAZISNU Ranting","MWC LAZISNU","PC LAZISNU"].map((value) => `<option ${appState.lazisnuDepositDestination === value ? "selected" : ""}>${value}</option>`).join("")}</select></label><label><span>Tanggal</span><input id="lazisnuDepositDate" type="date" value="${escapeHtml(appState.lazisnuDepositDate)}" /></label><label><span>Status</span><select id="lazisnuDepositStatus"><option value="all">Semua status</option>${["Draft","Sudah Disetor","Batal"].map((value) => `<option ${appState.lazisnuDepositStatus === value ? "selected" : ""}>${value}</option>`).join("")}</select></label></div>${renderLazisnuDepositList(items, session)}</section>${renderLazisnuDepositModal()}`); bindLazisnuDepositEvents(); }
-function bindLazisnuDepositEvents() { document.querySelector("#addLazisnuDepositButton")?.addEventListener("click", () => { appState.lazisnuDepositModalMode = "add"; renderLazisnuDeposits(); }); [["#lazisnuDepositSearch","lazisnuDepositSearch","input"],["#lazisnuDepositDestination","lazisnuDepositDestination","change"],["#lazisnuDepositDate","lazisnuDepositDate","change"],["#lazisnuDepositStatus","lazisnuDepositStatus","change"]].forEach(([selector,key,event]) => document.querySelector(selector)?.addEventListener(event, (e) => { appState[key] = e.target.value; renderLazisnuDeposits(); })); document.querySelectorAll("[data-lazisnu-deposit-action]").forEach((button) => button.addEventListener("click", () => { appState.lazisnuDepositModalMode = button.dataset.lazisnuDepositAction; appState.selectedLazisnuDepositId = Number(button.dataset.id); renderLazisnuDeposits(); })); document.querySelectorAll("[data-close-lazisnu-deposit-modal]").forEach((button) => button.addEventListener("click", () => { appState.lazisnuDepositModalMode = null; appState.selectedLazisnuDepositId = null; renderLazisnuDeposits(); })); document.querySelector("#lazisnuDepositForm")?.addEventListener("submit", handleLazisnuDepositSubmit); document.querySelector("#confirmLazisnuDepositDeleteButton")?.addEventListener("click", handleLazisnuDepositDelete); bindImagePreview("#lazisnuDepositProof", "#lazisnuDepositPreview", "#lazisnuDepositFormError"); }
+function renderLazisnuDeposits() { const session = getSession(); if (!session?.role) return navigate("/login"); const items = getVisibleLazisnuDeposits(); renderAppShell(session, "Setor ke LAZISNU", `<section class="lazisnu-deposit-hero"><div><p class="eyebrow">Kas Ranting ke LAZISNU</p><h2>Catat dana yang disetorkan ke LAZISNU, MWC, atau PCNU.</h2><p>Bendahara dan admin mengelola bukti penyerahan dana dari kas ranting.</p></div>${canManageLazisnuDeposits(session.role) ? `<button class="primary-button compact" id="addLazisnuDepositButton" type="button">Tambah Setoran</button>` : ""}</section>${renderCashSummary()}<section class="panel lazisnu-deposit-panel"><div class="lazisnu-deposit-toolbar"><label class="search-field"><span>Cari setoran</span><input id="lazisnuDepositSearch" value="${escapeHtml(appState.lazisnuDepositSearch)}" placeholder="Nomor setoran atau penerima" /></label><label class="search-field"><span>Tujuan</span><select id="lazisnuDepositDestination"><option value="all">Semua tujuan</option>${["LAZISNU Ranting","MWC LAZISNU","PC LAZISNU"].map((value) => `<option ${appState.lazisnuDepositDestination === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select></label><label><span>Tanggal</span><input id="lazisnuDepositDate" type="date" value="${escapeHtml(appState.lazisnuDepositDate)}" /></label><label><span>Status</span><select id="lazisnuDepositStatus"><option value="all">Semua status</option>${["Draft","Sudah Disetor","Batal"].map((value) => `<option ${appState.lazisnuDepositStatus === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select></label></div>${renderLazisnuDepositList(items, session)}</section>${renderLazisnuDepositModal()}`); bindLazisnuDepositEvents(); }
+function bindLazisnuDepositEvents() { document.querySelector("#addLazisnuDepositButton")?.addEventListener("click", () => { appState.lazisnuDepositModalMode = "add"; renderLazisnuDeposits(); }); [["#lazisnuDepositSearch","lazisnuDepositSearch","input"],["#lazisnuDepositDestination","lazisnuDepositDestination","change"],["#lazisnuDepositDate","lazisnuDepositDate","change"],["#lazisnuDepositStatus","lazisnuDepositStatus","change"]].forEach(([selector,key,event]) => document.querySelector(selector)?.addEventListener(event, event === "input" ? debounce((e) => { appState[key] = e.target.value; renderLazisnuDeposits(); }, 250) : (e) => { appState[key] = e.target.value; renderLazisnuDeposits(); })); document.querySelectorAll("[data-lazisnu-deposit-action]").forEach((button) => button.addEventListener("click", () => { appState.lazisnuDepositModalMode = button.dataset.lazisnuDepositAction; appState.selectedLazisnuDepositId = Number(button.dataset.id); renderLazisnuDeposits(); })); document.querySelectorAll("[data-close-lazisnu-deposit-modal]").forEach((button) => button.addEventListener("click", () => { appState.lazisnuDepositModalMode = null; appState.selectedLazisnuDepositId = null; renderLazisnuDeposits(); })); document.querySelector("#lazisnuDepositForm")?.addEventListener("submit", handleLazisnuDepositSubmit); document.querySelector("#confirmLazisnuDepositDeleteButton")?.addEventListener("click", handleLazisnuDepositDelete); bindImagePreview("#lazisnuDepositProof", "#lazisnuDepositPreview", "#lazisnuDepositFormError"); }
 async function handleLazisnuDepositSubmit(event) {
   event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); const existing = appState.lazisnuDeposits.find((item) => item.id === appState.selectedLazisnuDepositId); const proof = form.elements.proofPhoto?.files?.[0]; const error = validateImageFile(proof); if (error) return document.querySelector("#lazisnuDepositFormError").textContent = error; let uploaded = null; try { uploaded = proof ? await uploadDocumentationPhoto(proof, "setoran-lazisnu") : null; } catch (uploadError) { return document.querySelector("#lazisnuDepositFormError").textContent = uploadError.message; } const payload = { depositNo: String(data.get("depositNo") || "").trim(), date: String(data.get("date") || ""), destination: String(data.get("destination") || "LAZISNU Ranting"), recipientName: String(data.get("recipientName") || "").trim(), amount: Number(data.get("amount") || 0), method: String(data.get("method") || "Tunai"), receiptNo: String(data.get("receiptNo") || "").trim(), status: String(data.get("status") || "Draft"), note: String(data.get("note") || "").trim(), proofPhotoPath: uploaded?.path || existing?.proofPhotoPath || "", proofPhotoUrl: uploaded?.url || existing?.proofPhotoUrl || "", proofPhotoName: uploaded?.name || existing?.proofPhotoName || "" }; if (!payload.date || !payload.recipientName || payload.amount <= 0) return document.querySelector("#lazisnuDepositFormError").textContent = "Lengkapi tanggal, penerima, dan nominal setoran.";
   let targetItem = null;
@@ -4194,7 +4770,12 @@ async function handleLazisnuDepositSubmit(event) {
     targetItem = { id: Date.now(), ...payload };
     appState.lazisnuDeposits = [targetItem, ...appState.lazisnuDeposits];
   }
-  syncRowToPostgres("setoran_lazisnu", targetItem); appState.lazisnuDepositModalMode = null; appState.selectedLazisnuDepositId = null; renderLazisnuDeposits();
+  const ok = await wrapFormSubmit(event, () => syncRowToPostgres("setoran_lazisnu", targetItem));
+  if (ok) {
+    appState.lazisnuDepositModalMode = null;
+    appState.selectedLazisnuDepositId = null;
+    renderLazisnuDeposits();
+  }
 }
 async function handleLazisnuDepositDelete() { if (!await deleteRowFromPostgres("setoran_lazisnu", appState.selectedLazisnuDepositId)) return; appState.lazisnuDeposits = appState.lazisnuDeposits.filter((item) => item.id !== appState.selectedLazisnuDepositId); appState.lazisnuDepositModalMode = null; appState.selectedLazisnuDepositId = null; renderLazisnuDeposits(); }
 
@@ -4518,7 +5099,10 @@ function bindDistributionEvents(session) {
     ["#distributionDate", "distributionDate", "change"],
     ["#distributionStatus", "distributionStatus", "change"]
   ].forEach(([selector, key, eventName]) => {
-    document.querySelector(selector)?.addEventListener(eventName, (event) => {
+    document.querySelector(selector)?.addEventListener(eventName, eventName === "input" ? debounce((event) => {
+      appState[key] = event.target.value;
+      renderDistributions();
+    }, 250) : (event) => {
       appState[key] = event.target.value;
       renderDistributions();
     });
@@ -4619,8 +5203,10 @@ async function handleDistributionSubmit(event) {
     appState.distributions = [targetItem, ...appState.distributions];
   }
 
-  syncRowToPostgres("penyaluran_dana", targetItem);
-  closeDistributionModal();
+  const ok = await wrapFormSubmit(event, () => syncRowToPostgres("penyaluran_dana", targetItem));
+  if (ok) {
+    closeDistributionModal();
+  }
 }
 
 async function handleDistributionDelete() {
@@ -4979,7 +5565,10 @@ function bindOfficerEvents(session) {
     ["#officerArea", "officerArea", "change"],
     ["#officerStatus", "officerStatus", "change"]
   ].forEach(([selector, key, eventName]) => {
-    document.querySelector(selector)?.addEventListener(eventName, (event) => {
+    document.querySelector(selector)?.addEventListener(eventName, eventName === "input" ? debounce((event) => {
+      appState[key] = event.target.value;
+      renderOfficers();
+    }, 250) : (event) => {
       appState[key] = event.target.value;
       renderOfficers();
     });
@@ -5300,7 +5889,10 @@ function renderStructurePrint() {
 function bindBoardEvents(session) {
   document.querySelector("#addBoardButton")?.addEventListener("click", () => openBoardModal("add"));
   [["#boardSearch", "boardSearch", "input"], ["#boardPosition", "boardPosition", "change"], ["#boardStatus", "boardStatus", "change"]].forEach(([selector, key, eventName]) => {
-    document.querySelector(selector)?.addEventListener(eventName, (event) => {
+    document.querySelector(selector)?.addEventListener(eventName, eventName === "input" ? debounce((event) => {
+      appState[key] = event.target.value;
+      renderBoardMembers();
+    }, 250) : (event) => {
       appState[key] = event.target.value;
       renderBoardMembers();
     });
@@ -5789,10 +6381,10 @@ function renderUserModal() {
 
 function bindUserEvents() {
   document.querySelector("#addUserButton")?.addEventListener("click", () => openUserModal("add"));
-  document.querySelector("#userSearch")?.addEventListener("input", (event) => {
+  document.querySelector("#userSearch")?.addEventListener("input", debounce((event) => {
     appState.userSearch = event.target.value;
     renderUsers();
-  });
+  }, 250));
   document.querySelector("#userRole")?.addEventListener("change", (event) => {
     appState.userRole = event.target.value;
     renderUsers();
@@ -6169,6 +6761,7 @@ function renderPublicDashboard() {
         </div>
         <nav>
           <a href="#ringkasan">Ringkasan</a>
+          <a href="#peta-sebaran-container">Peta Sebaran</a>
           <a href="#program">Program</a>
           <a href="#profil">Profil</a>
         </nav>
@@ -6203,6 +6796,21 @@ function renderPublicDashboard() {
         ${renderPublicChart("Penyaluran 12 Bulan Terakhir", getPublicMonthlySeries("distribution"))}
       </section>
 
+      <!-- Peta Sebaran Maslahat -->
+      <section class="public-section" id="peta-sebaran-container">
+        <div class="public-section-heading">
+          <p class="eyebrow">Peta Maslahat</p>
+          <h2>Sebaran Penyaluran Dana Sosial</h2>
+        </div>
+        <div class="public-panel map-panel" style="padding: 1rem;">
+          <div id="distribution-map" style="height: 400px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); z-index: 1; border: 1px solid var(--border-light);"></div>
+          <div class="map-legend" style="display: flex; gap: 1.5rem; justify-content: center; margin-top: 1rem; font-size: 0.85rem; color: #555;">
+            <span style="display: inline-flex; align-items: center; gap: 0.5rem;"><span style="display: inline-block; background: #10b981; width: 12px; height: 12px; border-radius: 50%;"></span> Sudah Disalurkan</span>
+            <span style="display: inline-flex; align-items: center; gap: 0.5rem;"><span style="display: inline-block; background: #d97706; width: 12px; height: 12px; border-radius: 50%;"></span> Rencana Penyaluran (Draft)</span>
+          </div>
+        </div>
+      </section>
+
       <section class="public-section" id="program">
         <div class="public-section-heading">
           <p class="eyebrow">Program Bantuan</p>
@@ -6227,16 +6835,16 @@ function renderPublicDashboard() {
           <div class="gallery-grid">${renderPublicGallery()}</div>
           ${canUploadDocumentation ? `
             <form class="public-upload-form" id="publicDocumentationForm">
-              <h3>Tambah Dokumentasi Publik</h3>
-              <div class="form-grid">
-                <label class="field"><span>Judul kegiatan</span><input name="title" required /></label>
-                <label class="field"><span>Kategori</span><select name="category"><option>Santunan</option><option>Pengajian</option><option>Bakti Sosial</option><option>Kegiatan Ranting</option></select></label>
-                <label class="field"><span>Tanggal</span><input name="date" type="date" value="${getLocalDateString()}" required /></label>
-                <label class="field"><span>Foto kegiatan</span><input name="photo" id="publicDocumentationPhoto" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required /></label>
-              </div>
-              <div id="publicDocumentationPreview">${renderPhotoPreview("", "Preview dokumentasi kegiatan")}</div>
-              <p class="form-error" id="publicDocumentationError" role="alert"></p>
-              <button class="primary-button compact" type="submit">Upload Foto</button>
+               <h3>Tambah Dokumentasi Publik</h3>
+               <div class="form-grid">
+                 <label class="field"><span>Judul kegiatan</span><input name="title" required /></label>
+                 <label class="field"><span>Kategori</span><select name="category"><option>Santunan</option><option>Pengajian</option><option>Bakti Sosial</option><option>Kegiatan Ranting</option></select></label>
+                 <label class="field"><span>Tanggal</span><input name="date" type="date" value="${getLocalDateString()}" required /></label>
+                 <label class="field"><span>Foto kegiatan</span><input name="photo" id="publicDocumentationPhoto" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required /></label>
+               </div>
+               <div id="publicDocumentationPreview">${renderPhotoPreview("", "Preview dokumentasi kegiatan")}</div>
+               <p class="form-error" id="publicDocumentationError" role="alert"></p>
+               <button class="primary-button compact" type="submit">Upload Foto</button>
             </form>
           ` : ""}
         </article>
@@ -6264,6 +6872,87 @@ function renderPublicDashboard() {
   document.querySelector("#publicDocumentationForm")?.addEventListener("submit", handlePublicDocumentationSubmit);
   bindImagePreview("#publicDocumentationPhoto", "#publicDocumentationPreview", "#publicDocumentationError");
   updatePrayerWidget("#public-prayer-container");
+
+  loadLeaflet(() => {
+    initializeDistributionMap();
+  });
+}
+
+function initializeDistributionMap() {
+  const mapEl = document.getElementById("distribution-map");
+  if (!mapEl) return;
+
+  const centerLat = -7.3770;
+  const centerLng = 109.2205;
+
+  const map = window.L.map("distribution-map").setView([centerLat, centerLng], 15);
+
+  window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  const items = appState.distributions.filter((item) => item.status === "Disalurkan" || item.status === "Draft");
+
+  if (items.length === 0) {
+    window.L.marker([centerLat, centerLng])
+      .addTo(map)
+      .bindPopup("<b>Sekretariat PRNU Karangsalam Kidul II</b><br>Belum ada data penyaluran bantuan terdaftar.")
+      .openPopup();
+    return;
+  }
+
+  items.forEach((item) => {
+    const rt = Number(item.rt) || 1;
+    const rw = Number(item.rw) || 1;
+
+    // Jitter coordinates based on RT, RW and item.id
+    const seed = (rt * 7) + (rw * 13) + (item.id % 17);
+    const angle = (seed * 22.5) * (Math.PI / 180);
+    const radius = 0.0012 + ((item.id % 5) * 0.0004);
+
+    const lat = centerLat + (Math.sin(angle) * radius * 0.4);
+    const lng = centerLng + (Math.cos(angle) * radius);
+
+    const markerColor = item.status === "Disalurkan" ? "#10b981" : "#d97706";
+
+    const customIcon = window.L.divIcon({
+      className: "custom-map-pin",
+      html: `<div style="background-color: ${markerColor}; width: 14px; height: 14px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+
+    const popupContent = `
+      <div class="map-popup-card" style="min-width: 180px;">
+        <h4 style="margin:0 0 4px; color:#15803d; font-size: 0.9rem; font-weight: bold;">${escapeHtml(item.category)}</h4>
+        <div style="font-size:0.7rem; color:#666; margin-bottom:6px;">No: ${escapeHtml(item.distributionNo)}</div>
+        <table style="width:100%; border-collapse:collapse; font-size:0.75rem; text-align:left;">
+          <tr>
+            <th style="padding:2px 0; color:#888; font-weight:normal; width:45%;">Penerima</th>
+            <td style="padding:2px 0; font-weight:bold;">${escapeHtml(item.recipientName)}</td>
+          </tr>
+          <tr>
+            <th style="padding:2px 0; color:#888; font-weight:normal;">Wilayah</th>
+            <td style="padding:2px 0;">RT ${escapeHtml(item.rt)} / RW ${escapeHtml(item.rw)}</td>
+          </tr>
+          <tr>
+            <th style="padding:2px 0; color:#888; font-weight:normal;">Nominal</th>
+            <td style="padding:2px 0; font-weight:bold; color:#15803d;">${formatRupiah(item.amount)}</td>
+          </tr>
+          <tr>
+            <th style="padding:2px 0; color:#888; font-weight:normal;">Tanggal</th>
+            <td style="padding:2px 0;">${formatDateId(item.date)}</td>
+          </tr>
+        </table>
+        ${item.note ? `<p style="margin:6px 0 0; font-size:0.7rem; color:#555; border-top:1px dashed #eee; padding-top:4px; font-style:italic;">"${escapeHtml(item.note)}"</p>` : ""}
+      </div>
+    `;
+
+    window.L.marker([lat, lng], { icon: customIcon })
+      .addTo(map)
+      .bindPopup(popupContent);
+  });
 }
 
 async function handlePublicDocumentationSubmit(event) {
@@ -6430,8 +7119,10 @@ function renderLandingPage() {
     { day: "26", month: "Jun", title: "Rapat Pleno Syuriyah & Tanfidziyah", time: "09:00 - 12:00 WIB", location: "Sekretariat PRNU" }
   ];
   const sermons = [
-    { title: "Menguatkan Aswaja di Era Digital", speaker: "K.H. M. Yusuf Chudlori", duration: "45:20", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
-    { title: "Khidmah Jam'iyyah & Kemandirian Umat", speaker: "Dr. H. M. Zainul Majdi", duration: "38:15", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" }
+    { title: "Kewajiban Zakat & Khidmah Koin NU", speaker: "KH. Muhammad Sholeh", duration: "35:10", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+    { title: "Fadhilah Lailatul Ijtima' dan Amaliyah Aswaja", speaker: "Kiai Masruri", duration: "42:15", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+    { title: "Pentingnya Sedekah Subuh dan Kepedulian Sosial", speaker: "Ustadz Ahmad Fauzi", duration: "28:40", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
+    { title: "Ukhuwah Islamiyah dan Keberagaman Bangsa", speaker: "KH. M. Yusuf Chudlori", duration: "52:12", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" }
   ];
   const news = getPublishedNews().slice(0, 3);
 
@@ -6870,36 +7561,8 @@ function renderLandingPage() {
 
       <!-- Modals (Donation Dialog & News Reader Dialog) -->
       <dialog id="donation-dialog" class="donation-dialog">
-        <div class="donation-dialog-content">
-          <button class="dialog-close-btn" id="close-donation-dialog" aria-label="Tutup">&times;</button>
-          <div class="dialog-header">
-            <img src="/logo-karangsalam-2.png" alt="Logo NU" />
-            <h3>Rekening Donasi & Koin NU</h3>
-            <p>Salurkan infaq terbaik Anda secara langsung melalui transfer bank atau scan QRIS resmi.</p>
-          </div>
-          <div class="dialog-body">
-            <div class="donation-method-card">
-              <div class="method-header">Bank Rakyat Indonesia (BRI)</div>
-              <div class="method-body">
-                <strong>0023-01-000888-53-0</strong>
-                <span>a.n. PRNU Karangsalam Kidul II</span>
-                <button class="copy-btn" data-copy="002301000888530" type="button">
-                  <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                  Salin Rekening
-                </button>
-              </div>
-            </div>
-            <div class="donation-method-card">
-              <div class="method-header">QRIS SIKOINNU Ranting</div>
-              <div class="method-body text-center" style="display:flex; flex-direction:column; align-items:center; gap:0.5rem; text-align:center;">
-                <img src="/lazisnu-logo.svg" alt="QRIS QR Code" class="qris-img" style="width:160px; height:160px; object-fit:contain; border:1px solid var(--border-light); border-radius:var(--radius-sm); padding:0.5rem; background:#fff;" />
-                <p class="small" style="font-size:0.75rem; color:var(--neutral-mid); line-height:1.4; max-width:20rem;">Pindai kode QRIS di atas menggunakan aplikasi mobile banking atau e-wallet (Gopay, OVO, Dana, LinkAja).</p>
-              </div>
-            </div>
-          </div>
-          <div class="dialog-footer">
-            <p>Pengurus Ranting NU Karangsalam Kidul II - Transparan & Amanah</p>
-          </div>
+        <div class="donation-dialog-content" id="donation-dialog-content-wrapper">
+          <!-- Initialized via JavaScript initDonationDialogFlow() -->
         </div>
       </dialog>
 
@@ -6981,6 +7644,7 @@ function renderLandingPage() {
   document.querySelector("#copyDonationButton")?.addEventListener("click", (e) => {
     e.preventDefault();
     if (donationDialog) {
+      initDonationDialogFlow();
       donationDialog.showModal();
       confetti({
         particleCount: 150,
@@ -6988,37 +7652,6 @@ function renderLandingPage() {
         origin: { y: 0.6 }
       });
     }
-  });
-
-  document.querySelector("#close-donation-dialog")?.addEventListener("click", () => {
-    donationDialog?.close();
-  });
-
-  document.querySelectorAll(".copy-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const text = btn.dataset.copy;
-      navigator.clipboard.writeText(text).then(() => {
-        const originalText = btn.innerHTML;
-        btn.innerHTML = 'Tersalin!';
-        btn.classList.add("copied");
-        confetti({
-          particleCount: 50,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0.2, y: 0.6 }
-        });
-        confetti({
-          particleCount: 50,
-          angle: 120,
-          spread: 55,
-          origin: { x: 0.8, y: 0.6 }
-        });
-        setTimeout(() => {
-          btn.innerHTML = originalText;
-          btn.classList.remove("copied");
-        }, 2000);
-      }).catch(err => console.error("Clipboard copy failed:", err));
-    });
   });
 
   // Interactive News Reader Modal
@@ -7065,6 +7698,369 @@ function renderLandingPage() {
   updateClock();
   if (window.heroClockInterval) clearInterval(window.heroClockInterval);
   window.heroClockInterval = setInterval(updateClock, 1000);
+}
+
+// === Interactive QRIS Donation Simulator & Digital Receipt Helpers ===
+let qrisTimerInterval = null;
+
+function initDonationDialogFlow() {
+  if (qrisTimerInterval) clearInterval(qrisTimerInterval);
+  const wrapper = document.querySelector("#donation-dialog-content-wrapper");
+  if (!wrapper) return;
+
+  wrapper.innerHTML = `
+    <button class="dialog-close-btn" id="close-donation-dialog" aria-label="Tutup">&times;</button>
+    <div class="dialog-header">
+      <img src="/logo-karangsalam-2.png" alt="Logo NU" />
+      <h3>Layanan Infaq & Donasi</h3>
+      <p>Salurkan infaq terbaik Anda secara aman dan transparan.</p>
+    </div>
+    
+    <div class="donation-payment-tabs">
+      <button class="tab-btn active" id="tab-bank" type="button">Transfer Bank</button>
+      <button class="tab-btn" id="tab-qris" type="button">QRIS Instan</button>
+    </div>
+
+    <div class="dialog-body" id="donation-dialog-body">
+      ${getBankTransferTabHtml()}
+    </div>
+    
+    <div class="dialog-footer">
+      <p>Pengurus Ranting NU Karangsalam Kidul II - Transparan & Amanah</p>
+    </div>
+  `;
+
+  // Bind close button
+  document.querySelector("#close-donation-dialog")?.addEventListener("click", () => {
+    if (qrisTimerInterval) clearInterval(qrisTimerInterval);
+    document.querySelector("#donation-dialog")?.close();
+  });
+
+  // Bind copy button on bank transfer tab
+  bindBankTransferEvents();
+
+  // Tab switching
+  const tabBank = document.querySelector("#tab-bank");
+  const tabQris = document.querySelector("#tab-qris");
+  const dialogBody = document.querySelector("#donation-dialog-body");
+
+  tabBank?.addEventListener("click", () => {
+    if (qrisTimerInterval) clearInterval(qrisTimerInterval);
+    tabBank.classList.add("active");
+    tabQris.classList.remove("active");
+    dialogBody.innerHTML = getBankTransferTabHtml();
+    bindBankTransferEvents();
+  });
+
+  tabQris?.addEventListener("click", () => {
+    tabQris.classList.add("active");
+    tabBank.classList.remove("active");
+    dialogBody.innerHTML = getQrisSetupTabHtml();
+    bindQrisSetupEvents();
+  });
+}
+
+function getBankTransferTabHtml() {
+  return `
+    <div class="donation-method-card">
+      <div class="method-header">Bank Rakyat Indonesia (BRI)</div>
+      <div class="method-body">
+        <strong>0023-01-000888-53-0</strong>
+        <span>a.n. PRNU Karangsalam Kidul II</span>
+        <button class="copy-btn" id="copy-bank-acc" data-copy="002301000888530" type="button">
+          <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+          Salin Rekening
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function bindBankTransferEvents() {
+  const btn = document.querySelector("#copy-bank-acc");
+  btn?.addEventListener("click", () => {
+    const text = btn.dataset.copy;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.innerHTML = 'Tersalin!';
+      btn.classList.add("copied");
+      confetti({
+        particleCount: 50,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0.2, y: 0.6 }
+      });
+      setTimeout(() => {
+        btn.innerHTML = `<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Salin Rekening`;
+        btn.classList.remove("copied");
+      }, 3000);
+    });
+  });
+}
+
+function getQrisSetupTabHtml() {
+  return `
+    <form id="qris-setup-form" style="display:flex; flex-direction:column; gap:1.2rem; text-align:left;">
+      <label class="form-group-label" style="display:flex; flex-direction:column; gap:0.4rem;">
+        <span style="font-size:0.85rem; font-weight:700; color:var(--neutral-dark);">Nama Donatur (Opsional)</span>
+        <input type="text" id="qris-donor-name" placeholder="Hamba Allah" style="padding:0.7rem; border:1px solid var(--border-light); border-radius:var(--radius-sm); font-size:0.9rem;" />
+      </label>
+      <label class="form-group-label" style="display:flex; flex-direction:column; gap:0.4rem;">
+        <span style="font-size:0.85rem; font-weight:700; color:var(--neutral-dark);">Nomor WhatsApp (Opsional)</span>
+        <input type="tel" id="qris-donor-phone" placeholder="Contoh: 08123456789" style="padding:0.7rem; border:1px solid var(--border-light); border-radius:var(--radius-sm); font-size:0.9rem;" />
+      </label>
+      
+      <div style="display:flex; flex-direction:column; gap:0.4rem;">
+        <span style="font-size:0.85rem; font-weight:700; color:var(--neutral-dark);">Pilih Nominal Donasi</span>
+        <div class="qris-nominal-grid">
+          <button type="button" class="nominal-card" data-val="10000">Rp 10.000</button>
+          <button type="button" class="nominal-card active" data-val="25000">Rp 25.000</button>
+          <button type="button" class="nominal-card" data-val="50000">Rp 50.000</button>
+          <button type="button" class="nominal-card" data-val="100000">Rp 100.000</button>
+        </div>
+      </div>
+
+      <label class="form-group-label" style="display:flex; flex-direction:column; gap:0.4rem;">
+        <span style="font-size:0.85rem; font-weight:700; color:var(--neutral-dark);">Nominal Kustom (Rp)</span>
+        <input type="number" id="qris-custom-amount" min="1000" step="1000" placeholder="Masukkan nominal lain..." style="padding:0.7rem; border:1px solid var(--border-light); border-radius:var(--radius-sm); font-size:0.9rem;" />
+      </label>
+
+      <button type="submit" class="primary-button" style="width:100%; padding:0.85rem; font-size:1rem; margin-top:0.5rem;">Lanjut Pembayaran</button>
+    </form>
+  `;
+}
+
+function bindQrisSetupEvents() {
+  const form = document.querySelector("#qris-setup-form");
+  const nominalCards = document.querySelectorAll(".nominal-card");
+  const customAmountInput = document.querySelector("#qris-custom-amount");
+  let selectedNominal = 25000;
+
+  nominalCards.forEach((card) => {
+    card.addEventListener("click", () => {
+      nominalCards.forEach((c) => c.classList.remove("active"));
+      card.classList.add("active");
+      selectedNominal = Number(card.dataset.val);
+      if (customAmountInput) customAmountInput.value = "";
+    });
+  });
+
+  customAmountInput?.addEventListener("input", () => {
+    nominalCards.forEach((c) => c.classList.remove("active"));
+    selectedNominal = Number(customAmountInput.value || 0);
+  });
+
+  form?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const donorName = document.querySelector("#qris-donor-name")?.value.trim() || "Hamba Allah";
+    const donorPhone = document.querySelector("#qris-donor-phone")?.value.trim() || "";
+    const finalAmount = customAmountInput?.value ? Number(customAmountInput.value) : selectedNominal;
+
+    if (finalAmount < 1000) {
+      showToast("Minimal donasi adalah Rp 1.000.", "error");
+      return;
+    }
+
+    startQrisInvoice(finalAmount, donorName, donorPhone);
+  });
+}
+
+function startQrisInvoice(amount, donorName, donorPhone) {
+  const wrapper = document.querySelector("#donation-dialog-content-wrapper");
+  if (!wrapper) return;
+
+  if (qrisTimerInterval) clearInterval(qrisTimerInterval);
+
+  const transactionId = `TRX-QRIS-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const qrString = `00020101021226300016ID.CO.SIKOINNU.0118${transactionId}5204000053033605405${amount}5802ID5925PRNU KARANGSALAM KIDUL II6012BANYUMAS6304`;
+
+  const qr = qrcode(4, 'M');
+  qr.addData(qrString);
+  qr.make();
+  const qrCodeDataUrl = qr.createDataURL(6);
+
+  wrapper.innerHTML = `
+    <button class="dialog-close-btn" id="close-donation-dialog" aria-label="Tutup">&times;</button>
+    <div class="dialog-header">
+      <img src="/logo-karangsalam-2.png" alt="Logo NU" />
+      <h3>Pindai QRIS Infaq</h3>
+      <p>Silakan scan QRIS di bawah ini untuk menyelesaikan infaq Anda.</p>
+    </div>
+    
+    <div class="dialog-body" style="display:flex; flex-direction:column; align-items:center; gap:1.2rem; text-align:center;">
+      
+      <div class="qris-invoice-card" style="display:flex; flex-direction:column; align-items:center; background:#fff; border:1.5px dashed var(--primary-light); border-radius:var(--radius-md); padding:1.2rem; width:100%; max-width:320px; box-shadow:var(--shadow-sm);">
+        <div style="font-size:0.75rem; font-weight:700; letter-spacing:0.1em; color:#1e3a8a; margin-bottom:0.6rem;">QRIS NASIONAL</div>
+        <img src="${qrCodeDataUrl}" alt="QRIS Code" style="width:200px; height:200px; padding:0.5rem; border:1px solid #e2e8f0; border-radius:var(--radius-sm); margin-bottom:0.5rem;" />
+        <div style="font-family:var(--font-serif); font-size:1.15rem; font-weight:700; color:var(--primary-dark);">${escapeHtml(donorName)}</div>
+        <div style="font-size:1.35rem; font-weight:800; color:var(--gold-dark); margin:0.25rem 0;">${formatRupiah(amount)}</div>
+        <div style="font-size:0.75rem; color:var(--neutral-mid); font-family:var(--font-mono);">${transactionId}</div>
+      </div>
+
+      <div class="qris-timer-wrapper" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:0.25rem;">
+        <span class="qris-timer" id="qris-countdown-text">15:00</span>
+        <span style="font-size:0.8rem; color:var(--neutral-mid);">Selesaikan pembayaran sebelum waktu habis</span>
+        <div style="width:100%; max-width:260px; height:4px; background:#e2e8f0; border-radius:2px; overflow:hidden; margin-top:0.4rem;">
+          <div id="qris-progress-bar" style="width:100%; height:100%; background:var(--primary); transition: width 1s linear;"></div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:0.6rem; width:100%; max-width:280px; margin-top:0.5rem;">
+        <button type="button" class="primary-button" id="btn-simulate-qris-success" style="background:#10b981; border-color:#10b981;">Simulasi Bayar (Sukses)</button>
+        <button type="button" class="ghost-button" id="btn-cancel-qris" style="font-size:0.85rem;">Batalkan</button>
+      </div>
+
+    </div>
+
+    <div class="dialog-footer">
+      <p>Gerbang Donasi Digital Karangsalam Kidul II | Menunggu Pembayaran...</p>
+    </div>
+  `;
+
+  // Bind close button
+  document.querySelector("#close-donation-dialog")?.addEventListener("click", () => {
+    if (qrisTimerInterval) clearInterval(qrisTimerInterval);
+    document.querySelector("#donation-dialog")?.close();
+  });
+
+  // Countdown timer logic (15 minutes = 900 seconds)
+  let timeLeft = 900;
+  const countdownText = document.querySelector("#qris-countdown-text");
+  const progressBar = document.querySelector("#qris-progress-bar");
+
+  qrisTimerInterval = setInterval(() => {
+    timeLeft--;
+    if (timeLeft <= 0) {
+      clearInterval(qrisTimerInterval);
+      showToast("Batas waktu pembayaran habis.", "error");
+      initDonationDialogFlow();
+      return;
+    }
+
+    const mins = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+    const secs = String(timeLeft % 60).padStart(2, "0");
+    if (countdownText) countdownText.textContent = `${mins}:${secs}`;
+    if (progressBar) progressBar.style.width = `${(timeLeft / 900) * 100}%`;
+  }, 1000);
+
+  // Bind simulate success
+  document.querySelector("#btn-simulate-qris-success")?.addEventListener("click", () => {
+    if (qrisTimerInterval) clearInterval(qrisTimerInterval);
+    triggerQrisPaymentSuccess(transactionId, amount, donorName);
+  });
+
+  // Bind cancel
+  document.querySelector("#btn-cancel-qris")?.addEventListener("click", () => {
+    if (qrisTimerInterval) clearInterval(qrisTimerInterval);
+    initDonationDialogFlow();
+  });
+}
+
+function triggerQrisPaymentSuccess(trxId, amount, donorName) {
+  confetti({ particleCount: 80, spread: 60, origin: { x: 0.1, y: 0.6 } });
+  confetti({ particleCount: 80, spread: 60, origin: { x: 0.9, y: 0.6 } });
+  setTimeout(() => {
+    confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
+  }, 350);
+
+  const wrapper = document.querySelector("#donation-dialog-content-wrapper");
+  if (!wrapper) return;
+
+  const dateStr = new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date());
+
+  wrapper.innerHTML = `
+    <button class="dialog-close-btn" id="close-donation-dialog" aria-label="Tutup">&times;</button>
+    <div class="dialog-header no-print">
+      <img src="/logo-karangsalam-2.png" alt="Logo NU" />
+      <h3 style="color:#10b981;">Pembayaran Berhasil!</h3>
+      <p>Terima kasih atas infaq/sedekah yang Anda berikan. Semoga berkah dan bermanfaat.</p>
+    </div>
+
+    <div class="dialog-body" style="display:flex; flex-direction:column; align-items:center; gap:1.2rem;">
+      
+      <div class="digital-receipt-card" id="donation-receipt-print-area">
+        <div class="receipt-header">
+          <img src="/logo-karangsalam-2.png" alt="Logo NU" />
+          <div>
+            <h4>PENGURUS RANTING NAHDLATUL ULAMA</h4>
+            <h5>KARANGSALAM KIDUL II - KEDUNGBANTENG</h5>
+            <p>KUITANSI DONASI DIGITAL SIKOINNU</p>
+          </div>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <div class="receipt-status-stamp">LUNAS</div>
+
+        <table class="receipt-table">
+          <tr>
+            <th>Nomor Transaksi</th>
+            <td>: <strong>${escapeHtml(trxId)}</strong></td>
+          </tr>
+          <tr>
+            <th>Tanggal / Waktu</th>
+            <td>: ${dateStr} WIB</td>
+          </tr>
+          <tr>
+            <th>Nama Donatur</th>
+            <td>: ${escapeHtml(donorName)}</td>
+          </tr>
+          <tr>
+            <th>Metode Pembayaran</th>
+            <td>: QRIS Instan (Simulasi)</td>
+          </tr>
+          <tr>
+            <th>Status Pembayaran</th>
+            <td>: <span style="color:#10b981; font-weight:700;">SUKSES / LUNAS</span></td>
+          </tr>
+          <tr class="receipt-amount-row">
+            <th>Jumlah Donasi</th>
+            <td>: <span>${formatRupiah(amount)}</span></td>
+          </tr>
+        </table>
+
+        <div class="receipt-divider"></div>
+
+        <div class="receipt-footer">
+          <p>Teriring Doa Jazaakumullaahu Khairan Katsiran</p>
+          <p>Semoga Allah SWT melimpahkan berkah, kesehatan, dan kelapangan rezeki untuk Anda sekeluarga. Aamiin.</p>
+        </div>
+      </div>
+
+      <div class="receipt-actions no-print" style="display:flex; gap:0.8rem; width:100%; max-width:320px; justify-content:center; margin-top:0.5rem;">
+        <button type="button" class="primary-button" id="btn-print-receipt" style="display:flex; align-items:center; justify-content:center; gap:0.4rem; flex:1;">
+          <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect width="12" height="8" x="6" y="14"></rect></svg>
+          Cetak Kuitansi
+        </button>
+        <button type="button" class="ghost-button" id="btn-receipt-done" style="flex:1;">Selesai</button>
+      </div>
+
+    </div>
+
+    <div class="dialog-footer no-print">
+      <p>Data donasi ini akan tercatat dalam portal transparansi keuangan Ranting.</p>
+    </div>
+  `;
+
+  // Bind close button
+  document.querySelector("#close-donation-dialog")?.addEventListener("click", () => {
+    document.querySelector("#donation-dialog")?.close();
+  });
+
+  // Bind print receipt
+  document.querySelector("#btn-print-receipt")?.addEventListener("click", () => {
+    window.print();
+  });
+
+  // Bind done
+  document.querySelector("#btn-receipt-done")?.addEventListener("click", () => {
+    document.querySelector("#donation-dialog")?.close();
+  });
 }
 
 function render() {
@@ -7151,11 +8147,56 @@ function render() {
   navigate("/dashboard");
 }
 
+// Register Service Worker for PWA
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then((reg) => console.log("Service Worker registered with scope:", reg.scope))
+      .catch((err) => console.error("Service Worker registration failed:", err));
+  });
+}
+
+// Network Status Observers
+window.addEventListener("online", () => {
+  appState.isOffline = false;
+  updateOfflineIndicator();
+  syncOfflineData();
+});
+
+window.addEventListener("offline", () => {
+  appState.isOffline = true;
+  updateOfflineIndicator();
+});
+
+// Event Delegation for Network Badge Manual Click Trigger
+document.addEventListener("click", (event) => {
+  const badge = event.target.closest("#networkStatusBadge");
+  if (badge) {
+    if (appState.syncingOffline) {
+      showToast("Sedang menyelaraskan data...", "info");
+    } else if (appState.isOffline) {
+      showToast("Anda sedang offline. Tidak dapat menyelaraskan data.", "warning");
+    } else if (appState.pendingSyncCount > 0) {
+      syncOfflineData();
+    } else {
+      showToast("Koneksi online. Semua data telah diselaraskan.", "success");
+    }
+  }
+});
+
 window.addEventListener("popstate", render);
 
 async function initApp() {
   app.innerHTML = `<section class="placeholder-panel"><p class="eyebrow">Memuat</p><h2>Menyiapkan aplikasi</h2><p>Jika PostgreSQL belum dikonfigurasi, aplikasi akan berjalan dalam mode demo.</p></section>`;
   await restorePostgresSession();
+  
+  // Inisialisasi antrean offline dari IndexedDB
+  try {
+    await updatePendingSyncCount();
+  } catch (err) {
+    console.warn("Gagal inisialisasi antrean offline:", err);
+  }
+  
   await loadInternalData();
   render();
 }

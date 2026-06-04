@@ -26,7 +26,24 @@ export function createApiContext(config) {
   const pgStore = pgPool ? createPostgresStore(pgPool, tables, defaultUsers) : null;
   let pgReady = false;
   const loginAttempts = new Map();
+  const tokenDenylist = new Set();
   const dbPath = path.join(config.dataDir, "db.json");
+
+  // Cleanup expired rate-limit entries and denied tokens every 10 minutes
+  const _cleanupInterval = setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of loginAttempts) {
+      if (entry.resetAt <= now && (!entry.blockedUntil || entry.blockedUntil <= now)) loginAttempts.delete(key);
+    }
+    for (const token of tokenDenylist) {
+      try {
+        const [payload] = token.split(".");
+        const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+        if (data.expiresAt < now) tokenDenylist.delete(token);
+      } catch { tokenDenylist.delete(token); }
+    }
+  }, 10 * 60 * 1000);
+  if (_cleanupInterval.unref) _cleanupInterval.unref();
 
   function createSessionToken(data) {
     const payload = Buffer.from(JSON.stringify(data)).toString("base64url");
@@ -37,11 +54,14 @@ export function createApiContext(config) {
   }
   function verifySessionToken(token) {
     if (!token || !token.includes(".")) return null;
+    if (tokenDenylist.has(token)) return null;
     const [payload, signature] = token.split(".");
     const hmac = crypto.createHmac("sha256", config.sessionSecret);
     hmac.update(payload);
     const expectedSignature = hmac.digest("base64url");
-    if (signature !== expectedSignature) return null;
+    const sigBuf = Buffer.from(signature, "base64url");
+    const expectedBuf = Buffer.from(expectedSignature, "base64url");
+    if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) return null;
     try {
       const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
       if (data.expiresAt < Date.now()) return null;
@@ -50,6 +70,7 @@ export function createApiContext(config) {
       return null;
     }
   }
+  function denyToken(token) { if (token) tokenDenylist.add(token); }
 
   function emptyDb() { return Object.fromEntries(tables.map((table) => [table, table === "profiles" ? defaultUsers : []])); }
   async function ensurePg() {
@@ -93,14 +114,14 @@ export function createApiContext(config) {
   function cleanText(value, max = 500) { return String(value ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "").slice(0, max); }
   function cleanNumber(value, min = 0) { const number = Number(value || 0); if (!Number.isFinite(number) || number < min) throw new Error("Nominal tidak valid."); return number; }
   function cleanDate(value) { const text = cleanText(value, 20); if (text && !/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new Error("Tanggal tidak valid."); return text; }
-  async function normalizeProfile(row, existing = {}) { const next = { ...existing, ...row }; delete next.password; if (row.password && String(row.password).length >= 6) next.password_hash = await hashPasswordModern(row.password); if (!next.password_hash && !existing.password_hash) next.password_hash = await hashPasswordModern("changeme123"); next.email = String(next.email || "").trim().toLowerCase(); next.full_name = String(next.full_name || next.fullName || next.email || "User").trim(); next.role = roles.includes(next.role) ? next.role : "petugas"; next.status = statuses.includes(next.status) ? next.status : "aktif"; next.created_at = next.created_at || new Date().toISOString(); return next; }
+  async function normalizeProfile(row, existing = {}) { const next = { ...existing, ...row }; delete next.password; if (row.password && String(row.password).length >= 8) next.password_hash = await hashPasswordModern(row.password); if (!next.password_hash && !existing.password_hash) next.password_hash = await hashPasswordModern("changeme123"); next.email = String(next.email || "").trim().toLowerCase(); next.full_name = String(next.full_name || next.fullName || next.email || "User").trim(); next.role = roles.includes(next.role) ? next.role : "petugas"; next.status = statuses.includes(next.status) ? next.status : "aktif"; next.created_at = next.created_at || new Date().toISOString(); return next; }
   async function sanitizeRow(table, row, existing = {}) { if (!row || typeof row !== "object" || Array.isArray(row)) throw new Error("Data tidak valid."); if (table === "profiles") return normalizeProfile(row, existing); const next = { ...existing, ...row }; if (["pengambilan_koin", "setoran_petugas", "setoran_lazisnu", "penyaluran_dana"].includes(table)) next.nominal = cleanNumber(next.nominal ?? next.amount ?? 0); if (table === "pengambilan_koin") { if (!next.donatur_id || !next.petugas_id) throw new Error("Donatur dan petugas wajib diisi."); next.tanggal = cleanDate(next.tanggal); next.metode_pembayaran = cleanText(next.metode_pembayaran || "Tunai", 40); next.status_verifikasi = cleanText(next.status_verifikasi || "Menunggu Verifikasi", 40); next.catatan_petugas = cleanText(next.catatan_petugas, 1000); } if (table === "donatur") { next.nama_kk = cleanText(next.nama_kk, 160); if (!next.nama_kk) throw new Error("Nama donatur wajib diisi."); next.phone = cleanText(next.phone, 40); next.alamat = cleanText(next.alamat, 500); next.status = statuses.includes(next.status) ? next.status : "aktif"; } if (table === "berita") { next.judul = cleanText(next.judul, 180); next.ringkasan = cleanText(next.ringkasan, 500); next.konten = cleanText(next.konten, 5000); next.status = ["published", "draft"].includes(next.status) ? next.status : "draft"; if (!next.judul || !next.ringkasan || !next.konten) throw new Error("Berita wajib lengkap."); } next.updated_at = new Date().toISOString(); return next; }
   function canRead(user, table) { if (["ranting_profile", "pengurus", "dokumentasi_kegiatan", "penyaluran_dana", "berita"].includes(table)) return true; return Boolean(user); }
-  function canWrite(user, table) { if (!user) return false; if (user.role === "admin") return true; if (user.role === "bendahara") return !["profiles", "petugas"].includes(table); if (user.role === "pengurus") return ["dokumentasi_kegiatan", "berita"].includes(table); if (user.role === "petugas") return ["pengambilan_koin", "setoran_petugas"].includes(table); return false; }
+  function canWrite(user, table) { if (!user) return false; if (user.role === "admin") return true; if (user.role === "bendahara") return !["profiles", "petugas", "settings"].includes(table); if (user.role === "pengurus") return ["dokumentasi_kegiatan", "berita"].includes(table); if (user.role === "petugas") return ["pengambilan_koin", "setoran_petugas"].includes(table); return false; }
   function safePublicRows(table, rows, user) { if (user) return table === "profiles" ? rows.map(publicUser) : rows; if (table === "berita") return rows.filter((r) => (r.status || "published") === "published").map((r) => ({ id: r.id, judul: r.judul, kategori: r.kategori, tanggal: r.tanggal, ringkasan: r.ringkasan, konten: r.konten, gambar_url: r.gambar_url, gambar_nama: r.gambar_nama, status: r.status })); if (table === "dokumentasi_kegiatan") return rows.map((r) => ({ id: r.id, judul: r.judul, kategori: r.kategori, tanggal: r.tanggal, foto_url: r.foto_url, foto_nama: r.foto_nama })); if (table === "penyaluran_dana") return rows.filter((r) => r.status === "Disalurkan").map((r) => ({ id: r.id, tanggal: r.tanggal, kategori_bantuan: r.kategori_bantuan, nominal: r.nominal, sumber_dana: r.sumber_dana, status: r.status, keterangan: r.keterangan, dokumentasi_url: r.dokumentasi_url, dokumentasi_nama: r.dokumentasi_nama })); if (table === "pengurus") return rows.filter((r) => r.status !== "tidak_aktif").map((r) => ({ id: r.id, nama: r.nama, jabatan: r.jabatan, foto_url: r.foto_url, status: r.status })); if (table === "ranting_profile") return rows.map((r) => ({ id: r.id, nama_ranting: r.nama_ranting, desa: r.desa, kecamatan: r.kecamatan, kabupaten: r.kabupaten, provinsi: r.provinsi, alamat_sekretariat: r.alamat_sekretariat, email: r.email, phone: r.phone, masa_khidmah: r.masa_khidmah, logo_url: r.logo_url })); return []; }
   function safeUploadFolder(folder = "general") { return String(folder).toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "general"; }
   function safeUploadName(name = "file") { return String(name).toLowerCase().replace(/[^a-z0-9. -]+/g, "").replace(/\.\.+/g, ".").replace(/\s+/g, "-").replace(/^-+|-+$/g, "").replace(/^\.+|\.+$/g, "") || "file"; }
   function detectedImageType(buffer) { if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "image/jpeg"; if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "image/png"; if (buffer.length >= 12 && buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP") return "image/webp"; return ""; }
   async function upload(body, user) { if (!user) return { status: 403, body: { error: "Akses ditolak" } }; const match = String(body?.dataUrl || "").match(/^data:([^;]+);base64,(.+)$/); const type = String(body?.type || match?.[1] || "").toLowerCase(); if (!allowedUploadTypes.has(type)) return { status: 400, body: { error: "Format foto harus JPG, PNG, atau WEBP." } }; if (!match) return { status: 400, body: { error: "Data foto tidak valid." } }; const buffer = Buffer.from(match[2], "base64"); if (!buffer.length || buffer.length > config.maxBodyBytes) return { status: 400, body: { error: "Ukuran foto maksimal 2 MB." } }; const detectedType = detectedImageType(buffer); if (detectedType !== type) return { status: 400, body: { error: "Data foto tidak sesuai format." } }; const ext = allowedUploadTypes.get(type); const folder = safeUploadFolder(body?.folder); const base = safeUploadName(body?.name).replace(/\.(jpe?g|png|webp)$/i, ""); const filename = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}-${base}.${ext}`; const dir = path.join(config.uploadsDir, folder); await mkdir(dir, { recursive: true }); await writeFile(path.join(dir, filename), buffer); const url = `/uploads/${folder}/${filename}`; return { status: 200, body: { name: body?.name || filename, path: url, url, size: buffer.length, type } }; }
-  return { pgPool, ensurePg, readDb, writeDb, persistRow, persistDelete, authToken, checkLoginRate, recordLoginAttempt, tokenUser, publicUser, upgradeProfilePassword, saveProfilePassword, sanitizeRow, canRead, canWrite, safePublicRows, upload, createSessionToken, sessionTtlMs: config.sessionTtlMs };
+  return { pgPool, ensurePg, readDb, writeDb, persistRow, persistDelete, authToken, denyToken, checkLoginRate, recordLoginAttempt, tokenUser, publicUser, upgradeProfilePassword, saveProfilePassword, sanitizeRow, canRead, canWrite, safePublicRows, upload, createSessionToken, sessionTtlMs: config.sessionTtlMs };
 }

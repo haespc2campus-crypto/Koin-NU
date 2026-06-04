@@ -1,5 +1,6 @@
 import path from "node:path";
 import { existsSync } from "node:fs";
+import crypto from "node:crypto";
 
 export function loadEnv(root = process.cwd()) {
   for (const envFile of [".env.local", ".env"]) {
@@ -18,7 +19,11 @@ export function getServerConfig(root = process.cwd()) {
     port: Number(process.env.PORT || 5173),
     host: process.env.HOST || "0.0.0.0",
     databaseUrl: process.env.DATABASE_URL || "",
-    sessionSecret: process.env.SESSION_SECRET || "default-unsafe-session-secret-change-me",
+    sessionSecret: process.env.SESSION_SECRET || (() => {
+      const generated = crypto.randomBytes(32).toString("hex");
+      console.warn("⚠️  SESSION_SECRET not set! Using random secret — sessions will NOT survive restarts. Set SESSION_SECRET in .env for production.");
+      return generated;
+    })(),
     dataDir: process.env.DATA_DIR ? path.resolve(root, process.env.DATA_DIR) : path.join(root, "data"),
     uploadsDir: process.env.UPLOADS_DIR ? path.resolve(root, process.env.UPLOADS_DIR) : path.join(root, "uploads"),
     sessionTtlMs: Math.max(30 * 60 * 1000, Number(process.env.SESSION_TTL_MS || 12 * 60 * 60 * 1000)),

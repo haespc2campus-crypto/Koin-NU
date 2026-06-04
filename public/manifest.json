@@ -1,0 +1,25 @@
+{
+  "name": "SIKOINNU - Koin NU Karangsalam Kidul II",
+  "short_name": "SIKOINNU",
+  "description": "Sistem Informasi Koin NU Ranting Karangsalam Kidul II - Pengelolaan donasi koin LAZISNU.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0b6b3a",
+  "background_color": "#fcfbfa",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/logo-karangsalam-2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-karangsalam-2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

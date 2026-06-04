@@ -14,11 +14,26 @@ export async function buildServer(config = getServerConfig()) {
     bodyLimit: config.maxBodyBytes
   });
 
-  await app.register(helmet, { contentSecurityPolicy: false });
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "blob:", "https:"],
+        connectSrc: ["'self'", "https://api.aladhan.com"],
+        mediaSrc: ["'self'", "blob:"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"]
+      }
+    }
+  });
   await app.register(cors, { origin: false });
 
   app.setErrorHandler((error, request, reply) => {
-    const status = error.statusCode || (/Data|Nominal|Tanggal|wajib|valid|lengkap/i.test(error.message) ? 400 : 500);
+    let status = error.statusCode || 500;
+    if (status === 500 && (error.validation || /^(Data|Nominal|Tanggal|Password|Nama|Berita|Donatur|User) /i.test(error.message))) status = 400;
     request.log.error(error);
     reply.code(status).send({ error: status >= 500 ? "Terjadi kesalahan server." : error.message });
   });

@@ -8,6 +8,9 @@ export default defineConfig({
       "/uploads": "http://127.0.0.1:5173"
     }
   },
+  esbuild: {
+    pure: ["console.warn", "console.log"]
+  },
   build: {
     target: "es2022",
     outDir: "dist",
