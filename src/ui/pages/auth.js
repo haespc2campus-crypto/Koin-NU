@@ -123,7 +123,7 @@ async function handleLogin(event, options = {}) {
   try {
     if (postgresMode) {
       const auth = await internalRequest("login", { method: "POST", body: JSON.stringify({ email: email.value.trim(), password: password.value }) });
-      if (adminOnly && auth.user?.role !== "admin") {
+      if (adminOnly && !["super_admin", "admin"].includes(auth.user?.role)) {
         throw new Error("ADMIN_ONLY");
       }
       const appSession = { ...auth.user, id: auth.user.id, email: auth.user.email, name: auth.user.fullName || auth.user.full_name || auth.user.email, role: auth.user.role, phone: auth.user.phone || "", token: auth.token, authProvider: "internal", loggedInAt: new Date().toISOString() };

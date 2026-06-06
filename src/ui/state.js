@@ -248,7 +248,7 @@ export const BANOM_DATA = [...DEFAULT_BANOMS];
 
 export const sessionKey = "koin-nu-demo-session";
 export const authSessionKey = "koin-nu-postgres-auth-session";
-export const roles = ["admin", "bendahara", "petugas", "pengurus"];
+export const roles = ["super_admin", "admin", "bendahara", "petugas", "pengurus", "editor_berita"];
 
 export const app = document.querySelector("#app");
 
@@ -586,12 +586,16 @@ export function isReadOnlyRole(role) {
   return role === "pengurus";
 }
 
+export function isAdminRole(role) {
+  return role === "super_admin" || role === "admin";
+}
+
 export function canManagePublicContent(role) {
-  return role === "admin" || role === "bendahara" || role === "pengurus";
+  return isAdminRole(role) || role === "bendahara" || role === "pengurus" || role === "editor_berita";
 }
 
 export function canManageUsers(role) {
-  return role === "admin";
+  return isAdminRole(role);
 }
 
 export function canAccessPath(session, path) {
@@ -599,10 +603,13 @@ export function canAccessPath(session, path) {
     return false;
   }
   if (path === "/users") {
-    return session.role === "admin";
+    return isAdminRole(session.role);
   }
   if (path === "/pengaturan") {
-    return session.role === "admin";
+    return isAdminRole(session.role);
+  }
+  if (session.role === "editor_berita") {
+    return ["/dashboard", "/berita", "/pengurus", "/profil-ranting"].includes(path);
   }
   if (session.role === "pengurus") {
     return ["/dashboard", "/profil-ranting", "/pengurus", "/donatur", "/petugas", "/pengambilan-koin", "/verifikasi", "/setoran-petugas", "/setor-lazisnu", "/penyaluran-dana", "/berita", "/laporan"].includes(path);
@@ -611,32 +618,33 @@ export function canAccessPath(session, path) {
 }
 
 export function labelRole(role) {
-  return role.charAt(0).toUpperCase() + role.slice(1);
+  const labels = { super_admin: "Super Admin", editor_berita: "Editor Berita" };
+  return labels[role] || role.charAt(0).toUpperCase() + role.slice(1);
 }
 
 export function canManageDonors(role) {
   if (isReadOnlyRole(role)) {
     return false;
   }
-  return role === "admin" || role === "bendahara";
+  return isAdminRole(role) || role === "bendahara";
 }
 
 export function canManagePickup(session, pickup = null) {
   if (isReadOnlyRole(session.role) || session.role === "bendahara") {
     return false;
   }
-  if (session.role === "admin") {
+  if (isAdminRole(session.role)) {
     return true;
   }
   return !pickup || pickup.officerEmail === session.email || pickup.officerEmail === "petugas@rantingnu.id";
 }
 
 export function canEditPickup(session, pickup = null) {
-  return session.role === "admin" || (session.role === "petugas" && canManagePickup(session, pickup));
+  return isAdminRole(session.role) || (session.role === "petugas" && canManagePickup(session, pickup));
 }
 
 export function canDeletePickup(session) {
-  return session.role === "admin";
+  return isAdminRole(session.role);
 }
 
 // === IndexedDB & Offline Helpers ===

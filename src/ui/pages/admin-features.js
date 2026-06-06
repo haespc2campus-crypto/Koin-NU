@@ -19,6 +19,7 @@ import {
   syncVerificationAuditToPostgres,
   syncProfileToPostgres,
   isReadOnlyRole,
+  isAdminRole,
   canManagePublicContent,
   canManageUsers,
   canAccessPath,
@@ -4207,7 +4208,6 @@ export async function handleNewsSubmit(event) {
   appState.selectedNewsId = null;
   renderNewsAdmin();
 }
-
 
 
 

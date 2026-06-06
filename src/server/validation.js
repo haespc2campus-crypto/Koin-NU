@@ -24,6 +24,13 @@ export const schemas = {
     folder: z.string().optional(),
     name: z.string().optional()
   }),
+  contactMessage: z.object({
+    nama: z.string().trim().min(2).max(160),
+    whatsapp: z.string().trim().min(6).max(40),
+    email: z.string().trim().email().optional().or(z.literal("")),
+    subjek: z.string().trim().max(160).optional().or(z.literal("")),
+    pesan: z.string().trim().min(5).max(2000)
+  }),
   tableParams: z.object({
     table: tableEnum,
     id: idParam

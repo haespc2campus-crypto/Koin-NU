@@ -10,12 +10,43 @@ function send(reply, status, body) {
 // === Auth Middleware ===
 // Routes that don't require authentication
 const PUBLIC_ROUTES = new Set(["/api/health", "/api/login", "/api/logout", "/api/db"]);
+const SITE_URL = "https://nukarangsalam2.com";
+
+function xmlEscape(value = "") {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+function slugOf(item, fallbackPrefix) {
+  return item.slug || String(item.judul || item.nama_usaha || item.id || fallbackPrefix)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function byNewestDate(a, b) {
+  const left = a.published_at || a.tanggal_mulai || a.tanggal || a.created_at || "";
+  const right = b.published_at || b.tanggal_mulai || b.tanggal || b.created_at || "";
+  return String(right).localeCompare(String(left));
+}
+
+function sumNominal(rows = []) {
+  return rows.reduce((total, row) => total + Number(row.nominal || row.amount || 0), 0);
+}
+
+function findBySlug(rows, slug, fallbackPrefix) {
+  return rows.find((item) => slugOf(item, fallbackPrefix) === slug);
+}
 
 function buildAuthHook(context) {
   return async function authMiddleware(request, reply) {
     // Skip auth for non-API routes (static files) and public API routes
     const url = request.url.split("?")[0];
-    if (!url.startsWith("/api/") || PUBLIC_ROUTES.has(url)) return;
+    if (!url.startsWith("/api/") || PUBLIC_ROUTES.has(url) || url.startsWith("/api/public/")) return;
 
     const db = await context.readDb();
     const user = context.tokenUser(request, db);
@@ -55,9 +86,156 @@ export async function registerApiRoutes(app, context) {
 
   // --- Public Routes (no auth required) ---
 
+  app.get("/robots.txt", async (request, reply) => {
+    const body = [
+      "User-agent: *",
+      "Disallow: /admin",
+      "Disallow: /login",
+      "Disallow: /dashboard",
+      "Disallow: /donatur",
+      "Disallow: /petugas",
+      "Disallow: /pengambilan-koin",
+      "Disallow: /verifikasi",
+      "Disallow: /setoran-petugas",
+      "Disallow: /setor-lazisnu",
+      "Disallow: /penyaluran-dana",
+      "Disallow: /laporan",
+      "Disallow: /users",
+      "Disallow: /pengaturan",
+      "Disallow: /api/",
+      "Allow: /api/public/",
+      `Sitemap: ${SITE_URL}/sitemap.xml`,
+      ""
+    ].join("\n");
+    return reply.type("text/plain; charset=utf-8").send(body);
+  });
+
+  app.get("/sitemap.xml", async (request, reply) => {
+    const db = await context.readDb();
+    const publicData = {};
+    for (const table of context.publicPortalTables) {
+      publicData[table] = context.safePublicRows(table, db[table] || [], null);
+    }
+    const urls = [
+      { loc: "/", priority: "1.0" },
+      { loc: "/profil", priority: "0.8" },
+      { loc: "/kegiatan", priority: "0.8" },
+      { loc: "/layanan-warga", priority: "0.8" },
+      { loc: "/koin-nu", priority: "0.8" },
+      { loc: "/umkm", priority: "0.8" },
+      { loc: "/artikel", priority: "0.8" },
+      { loc: "/transparansi", priority: "0.8" },
+      { loc: "/download", priority: "0.7" },
+      { loc: "/kontak", priority: "0.7" },
+      ...publicData.berita.map((item) => ({ loc: `/berita/${slugOf(item, "berita")}`, priority: "0.7" })),
+      ...publicData.artikel.map((item) => ({ loc: `/artikel/${slugOf(item, "artikel")}`, priority: "0.7" })),
+      ...publicData.kegiatan.map((item) => ({ loc: `/kegiatan/${slugOf(item, "kegiatan")}`, priority: "0.7" })),
+      ...publicData.umkm.map((item) => ({ loc: `/umkm/${slugOf(item, "umkm")}`, priority: "0.7" }))
+    ];
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((item) => `  <url><loc>${SITE_URL}${xmlEscape(item.loc)}</loc><changefreq>weekly</changefreq><priority>${item.priority}</priority></url>`).join("\n")}\n</urlset>\n`;
+    return reply.type("application/xml; charset=utf-8").send(xml);
+  });
+
   app.get("/api/health", async () => {
     if (context.pgPool) await context.ensurePg();
     return { ok: true, runtime: "fastify", database: context.pgPool ? "postgresql" : "json", time: new Date().toISOString() };
+  });
+
+  app.get("/api/public/home", async () => {
+    const db = await context.readDb();
+    const berita = context.safePublicRows("berita", db.berita, null).sort(byNewestDate).slice(0, 6);
+    const artikel = context.safePublicRows("artikel", db.artikel, null).sort(byNewestDate).slice(0, 6);
+    const kegiatan = context.safePublicRows("kegiatan", db.kegiatan, null).sort(byNewestDate).slice(0, 6);
+    const pengumuman = context.safePublicRows("pengumuman", db.pengumuman, null).sort(byNewestDate).slice(0, 5);
+    const umkm = context.safePublicRows("umkm", db.umkm, null).slice(0, 8);
+    const pickups = db.pengambilan_koin || [];
+    const distributions = db.penyaluran_dana || [];
+    return {
+      pengumuman,
+      kegiatan,
+      berita,
+      artikel,
+      umkm,
+      statistik: {
+        total_pemasukan: sumNominal(pickups.filter((item) => item.status === "Disetujui Bendahara" || item.status_verifikasi === "Disetujui Bendahara")),
+        total_penyaluran: sumNominal(distributions.filter((item) => item.status === "Disalurkan")),
+        donatur_aktif: (db.donatur || []).filter((item) => item.status !== "tidak_aktif" && item.active !== false).length,
+        petugas_aktif: (db.petugas || []).filter((item) => item.status !== "tidak_aktif" && item.active !== false).length
+      }
+    };
+  });
+
+  app.get("/api/public/articles", async () => {
+    const db = await context.readDb();
+    return context.safePublicRows("artikel", db.artikel, null).sort(byNewestDate);
+  });
+
+  app.get("/api/public/articles/:slug", async (request, reply) => {
+    const db = await context.readDb();
+    const rows = context.safePublicRows("artikel", db.artikel, null);
+    const item = findBySlug(rows, request.params.slug, "artikel");
+    if (!item) return send(reply, 404, { error: "Artikel tidak ditemukan." });
+    return item;
+  });
+
+  app.get("/api/public/news", async () => {
+    const db = await context.readDb();
+    return context.safePublicRows("berita", db.berita, null).sort(byNewestDate);
+  });
+
+  app.get("/api/public/events", async () => {
+    const db = await context.readDb();
+    return context.safePublicRows("kegiatan", db.kegiatan, null).sort(byNewestDate);
+  });
+
+  app.get("/api/public/events/:slug", async (request, reply) => {
+    const db = await context.readDb();
+    const rows = context.safePublicRows("kegiatan", db.kegiatan, null);
+    const item = findBySlug(rows, request.params.slug, "kegiatan");
+    if (!item) return send(reply, 404, { error: "Kegiatan tidak ditemukan." });
+    return item;
+  });
+
+  app.get("/api/public/umkm", async () => {
+    const db = await context.readDb();
+    return context.safePublicRows("umkm", db.umkm, null);
+  });
+
+  app.get("/api/public/umkm/:slug", async (request, reply) => {
+    const db = await context.readDb();
+    const rows = context.safePublicRows("umkm", db.umkm, null);
+    const item = findBySlug(rows, request.params.slug, "umkm");
+    if (!item) return send(reply, 404, { error: "UMKM tidak ditemukan." });
+    return item;
+  });
+
+  app.get("/api/public/downloads", async () => {
+    const db = await context.readDb();
+    return context.safePublicRows("download", db.download, null);
+  });
+
+  app.get("/api/public/transparency", async () => {
+    const db = await context.readDb();
+    const income = sumNominal((db.pengambilan_koin || []).filter((item) => item.status === "Disetujui Bendahara" || item.status_verifikasi === "Disetujui Bendahara"));
+    const expense = sumNominal((db.penyaluran_dana || []).filter((item) => item.status === "Disalurkan"));
+    return {
+      total_pemasukan: income,
+      total_pengeluaran: expense,
+      saldo: income - expense,
+      laporan_koin: context.safePublicRows("penyaluran_dana", db.penyaluran_dana, null),
+      program_kerja: context.safePublicRows("program_kerja", db.program_kerja, null),
+      lpj_kegiatan: context.safePublicRows("lpj_kegiatan", db.lpj_kegiatan, null),
+      dokumen_publik: context.safePublicRows("dokumen_publik", db.dokumen_publik, null)
+    };
+  });
+
+  app.post("/api/public/contact", async (request) => {
+    const db = await context.readDb();
+    const body = parse(schemas.contactMessage, request.body);
+    const item = { id: crypto.randomUUID(), ...body, status: "baru", created_at: new Date().toISOString() };
+    db.kontak_masuk.push(item);
+    await context.persistRow(db, "kontak_masuk", item);
+    return { ok: true };
   });
 
   app.post("/api/login", async (request, reply) => {
@@ -87,7 +265,7 @@ export async function registerApiRoutes(app, context) {
     for (const t of tables) {
       if (context.canRead(user, t)) data[t] = context.safePublicRows(t, db[t], user);
     }
-    data.profiles = user?.role === "admin" ? db.profiles.map(context.publicUser) : [];
+    data.profiles = context.isAdminRole(user?.role) ? db.profiles.map(context.publicUser) : [];
     return data;
   });
 
@@ -132,7 +310,7 @@ export async function registerApiRoutes(app, context) {
     if (request.method === "GET") {
       if (!context.canRead(user, table)) return send(reply, 403, { error: "Akses ditolak" });
       // Profile listing requires admin
-      if (table === "profiles" && !requireRole(user, ["admin"], reply)) return;
+      if (table === "profiles" && !requireRole(user, ["super_admin", "admin"], reply)) return;
       return context.safePublicRows(table, db[table], user);
     }
 
