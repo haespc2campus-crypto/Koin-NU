@@ -80,6 +80,10 @@ function render() {
     renderLogin();
     return;
   }
+  if (path === "/admin") {
+    renderLogin({ adminOnly: true });
+    return;
+  }
 
   const session = getSession();
   if (!session?.role) {

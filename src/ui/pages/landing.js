@@ -662,10 +662,11 @@ export function renderLandingPage() {
             </span>
           </div>
           <div class="landing-topbar-actions">
-            <a href="/login" class="landing-topbar-link">
+            <a href="/admin" class="landing-topbar-link landing-topbar-link-admin">
               <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
-              Masuk Sistem SIKOINNU
+              Login Admin
             </a>
+            <a href="/login" class="landing-topbar-link">Masuk SIKOINNU</a>
           </div>
         </div>
       </div>

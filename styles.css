@@ -174,6 +174,13 @@ button, input, select, textarea {
   color: var(--primary-dark);
 }
 
+.admin-login-back {
+  display: inline-flex;
+  justify-content: center;
+  margin-top: 0.35rem;
+  text-decoration: none;
+}
+
 /* Modals (MicroModal Support) */
 .modal-backdrop {
   position: fixed;
@@ -3139,6 +3146,7 @@ td span {
 .landing-topbar-actions {
   display: flex;
   align-items: center;
+  gap: 0.75rem;
 }
 .landing-topbar-link {
   color: #ffffff;
@@ -3154,6 +3162,19 @@ td span {
 .landing-topbar-link .lucide-icon {
   width: 0.95rem;
   height: 0.95rem;
+}
+
+.landing-topbar-link-admin {
+  background: var(--gold);
+  color: var(--nu-dark);
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 6px 18px rgba(216, 173, 69, 0.22);
+}
+
+.landing-topbar-link-admin:hover {
+  background: #fff;
+  color: var(--nu-dark);
 }
 
 /* Float main header cleanly with topbar */

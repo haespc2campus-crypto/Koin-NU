@@ -32,10 +32,11 @@ export function renderShell(content) {
   `;
 }
 
-export function renderLogin() {
+export function renderLogin(options = {}) {
+  const adminOnly = Boolean(options.adminOnly);
   const saved = getSession();
   if (saved?.role) {
-    navigate("/dashboard");
+    navigate(saved.role === "admin" || !adminOnly ? "/dashboard" : "/login");
     return;
   }
 
@@ -44,10 +45,10 @@ export function renderLogin() {
   renderShell(`
     <form class="login-card reveal-on-scroll reveal-delay-200" id="loginForm" novalidate>
       <div class="form-heading">
-        <p class="eyebrow">${postgresMode ? "database internal" : "Mode Demo"}</p>
-        <h2>Masuk ${brand.name}</h2>
+        <p class="eyebrow">${adminOnly ? "akses admin" : postgresMode ? "database internal" : "Mode Demo"}</p>
+        <h2>${adminOnly ? "Login Admin" : `Masuk ${brand.name}`}</h2>
         <strong class="login-subtitle">${brand.subtitle}</strong>
-        <p>${postgresMode ? "Gunakan akun database internal." : "Database internal aktif."}</p>
+        <p>${adminOnly ? "Halaman ini khusus administrator website dan sistem SIKOINNU." : postgresMode ? "Gunakan akun database internal." : "Database internal aktif."}</p>
       </div>
 
       <label class="field">
@@ -78,19 +79,21 @@ export function renderLogin() {
       <p class="form-error" id="formError" role="alert"></p>
       <p class="form-success" id="formSuccess" role="status"></p>
       <button class="primary-button" id="loginButton" type="submit">Masuk</button>
+      ${adminOnly ? `<a class="link-button admin-login-back" href="/">Kembali ke website</a>` : ""}
       <button class="link-button" id="forgotPasswordButton" type="button">Lupa password?</button>
     </form>
   `);
 
-  document.querySelector("#loginForm").addEventListener("submit", handleLogin);
+  document.querySelector("#loginForm").addEventListener("submit", (event) => handleLogin(event, { adminOnly }));
   document.querySelector("#forgotPasswordButton").addEventListener("click", handleForgotPassword);
   
   // Trigger animations
   initScrollReveal();
 }
 
-async function handleLogin(event) {
+async function handleLogin(event, options = {}) {
   event.preventDefault();
+  const adminOnly = Boolean(options.adminOnly);
 
   const email = document.querySelector("#email");
   const password = document.querySelector("#password");
@@ -120,6 +123,9 @@ async function handleLogin(event) {
   try {
     if (postgresMode) {
       const auth = await internalRequest("login", { method: "POST", body: JSON.stringify({ email: email.value.trim(), password: password.value }) });
+      if (adminOnly && auth.user?.role !== "admin") {
+        throw new Error("ADMIN_ONLY");
+      }
       const appSession = { ...auth.user, id: auth.user.id, email: auth.user.email, name: auth.user.fullName || auth.user.full_name || auth.user.email, role: auth.user.role, phone: auth.user.phone || "", token: auth.token, authProvider: "internal", loggedInAt: new Date().toISOString() };
       setSession(appSession);
       await loadInternalData();
@@ -137,15 +143,18 @@ async function handleLogin(event) {
   } catch (error) {
     clearAuthSession();
     clearSession();
-    document.querySelector("#formError").textContent = parseAuthError(error);
+    document.querySelector("#formError").textContent = parseAuthError(error, { adminOnly });
   } finally {
     button.disabled = false;
     button.textContent = "Masuk";
   }
 }
 
-function parseAuthError(error) {
+function parseAuthError(error, options = {}) {
   const message = String(error?.message || error || "");
+  if (message.includes("ADMIN_ONLY")) {
+    return "Halaman ini khusus admin. Gunakan akun administrator.";
+  }
   if (message.includes("Invalid login credentials")) {
     return "Email atau password tidak sesuai.";
   }
