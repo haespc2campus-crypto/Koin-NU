@@ -4209,5 +4209,353 @@ export async function handleNewsSubmit(event) {
   renderNewsAdmin();
 }
 
+function createPortalSlug(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function portalStatusOptions(current, values = ["published", "draft"]) {
+  return values.map((value) => `<option value="${value}" ${current === value ? "selected" : ""}>${value}</option>`).join("");
+}
+
+function requirePortalAdmin(session) {
+  if (!session?.role) {
+    navigate("/login");
+    return false;
+  }
+  return isAdminRole(session.role);
+}
+
+function renderPortalActionButtons(id, editAttr, deleteAttr) {
+  return `
+    <div class="action-buttons">
+      <button class="ghost-button compact" type="button" ${editAttr}="${escapeHtml(id)}">Edit</button>
+      <button class="danger-button compact" type="button" ${deleteAttr}="${escapeHtml(id)}">Hapus</button>
+    </div>
+  `;
+}
+
+function renderUmkmRows(items) {
+  if (!items.length) return `<div class="empty-state">Belum ada data UMKM warga.</div>`;
+  const rows = items.map((item) => `
+    <tr>
+      <td><strong>${escapeHtml(item.businessName)}</strong><span>${escapeHtml(item.owner || "-")}</span></td>
+      <td>${escapeHtml(item.category || "-")}</td>
+      <td>${escapeHtml(item.products || "-")}</td>
+      <td>${escapeHtml(item.whatsapp || "-")}</td>
+      <td><span class="status-pill ${item.status === "published" ? "success" : "warning"}">${escapeHtml(item.status)}</span></td>
+      <td>${renderPortalActionButtons(item.id, "data-edit-umkm", "data-delete-umkm")}</td>
+    </tr>
+  `).join("");
+  return `<div class="table-wrap"><table><thead><tr><th>Usaha</th><th>Kategori</th><th>Produk</th><th>WhatsApp</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+export function renderUmkmAdmin() {
+  const session = getSession();
+  if (!requirePortalAdmin(session)) return navigate("/dashboard");
+  const editing = appState.portalUmkm.find((item) => String(item.id) === String(appState.selectedUmkmId));
+  const items = [...appState.portalUmkm].sort((a, b) => String(a.businessName).localeCompare(String(b.businessName)));
+
+  renderAppShell(session, "UMKM Warga", `
+    <section class="public-panel">
+      <div class="panel-heading">
+        <div><p class="eyebrow">Portal Layanan Warga</p><h2>Kelola direktori UMKM</h2></div>
+        <button class="primary-button compact" id="addUmkmButton" type="button">Tambah UMKM</button>
+      </div>
+      ${renderUmkmRows(items)}
+    </section>
+    ${appState.umkmModalOpen ? `
+      <section class="public-panel">
+        <div class="panel-heading"><div><p class="eyebrow">Form UMKM</p><h2>${editing ? "Edit" : "Tambah"} UMKM Warga</h2></div></div>
+        <form class="public-upload-form" id="umkmForm">
+          <div class="form-grid">
+            <label class="field"><span>Nama Usaha</span><input name="businessName" value="${escapeHtml(editing?.businessName || "")}" required /></label>
+            <label class="field"><span>Pemilik</span><input name="owner" value="${escapeHtml(editing?.owner || "")}" /></label>
+            <label class="field"><span>Kategori</span><input name="category" value="${escapeHtml(editing?.category || "")}" placeholder="Kuliner, jasa, toko, dll" /></label>
+            <label class="field"><span>Produk/Jasa</span><input name="products" value="${escapeHtml(editing?.products || "")}" /></label>
+            <label class="field"><span>WhatsApp</span><input name="whatsapp" value="${escapeHtml(editing?.whatsapp || "")}" /></label>
+            <label class="field"><span>Status</span><select name="status">${portalStatusOptions(editing?.status || "draft")}</select></label>
+          </div>
+          <label class="field"><span>Alamat</span><textarea name="address">${escapeHtml(editing?.address || "")}</textarea></label>
+          <label class="field"><span>Deskripsi</span><textarea name="description">${escapeHtml(editing?.description || "")}</textarea></label>
+          <label class="field"><span>URL Foto</span><input name="photoUrl" value="${escapeHtml(editing?.photoUrl || "")}" placeholder="/uploads/umkm/foto.jpg" /></label>
+          <p class="form-error" id="umkmFormError" role="alert"></p>
+          <button class="primary-button compact" type="submit">Simpan UMKM</button>
+          <button class="ghost-button" id="cancelUmkmButton" type="button">Batal</button>
+        </form>
+      </section>` : ""}
+  `);
+
+  document.querySelector("#addUmkmButton")?.addEventListener("click", () => { appState.selectedUmkmId = null; appState.umkmModalOpen = true; renderUmkmAdmin(); });
+  document.querySelector("#cancelUmkmButton")?.addEventListener("click", () => { appState.selectedUmkmId = null; appState.umkmModalOpen = false; renderUmkmAdmin(); });
+  document.querySelectorAll("[data-edit-umkm]").forEach((button) => button.addEventListener("click", () => { appState.selectedUmkmId = button.dataset.editUmkm; appState.umkmModalOpen = true; renderUmkmAdmin(); }));
+  document.querySelectorAll("[data-delete-umkm]").forEach((button) => button.addEventListener("click", async () => {
+    if (!confirm("Hapus data UMKM ini?")) return;
+    if (!await deleteRowFromPostgres("umkm", button.dataset.deleteUmkm)) return;
+    appState.portalUmkm = appState.portalUmkm.filter((item) => String(item.id) !== String(button.dataset.deleteUmkm));
+    renderUmkmAdmin();
+  }));
+  document.querySelector("#umkmForm")?.addEventListener("submit", handleUmkmSubmit);
+}
+
+export async function handleUmkmSubmit(event) {
+  event.preventDefault();
+  const session = getSession();
+  if (!isAdminRole(session?.role)) return;
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const existing = appState.portalUmkm.find((item) => String(item.id) === String(appState.selectedUmkmId));
+  const item = {
+    id: existing?.id || `umkm-${Date.now()}`,
+    businessName: String(data.get("businessName") || "").trim(),
+    owner: String(data.get("owner") || "").trim(),
+    category: String(data.get("category") || "").trim(),
+    products: String(data.get("products") || "").trim(),
+    whatsapp: String(data.get("whatsapp") || "").trim(),
+    address: String(data.get("address") || "").trim(),
+    description: String(data.get("description") || "").trim(),
+    photoUrl: String(data.get("photoUrl") || "").trim(),
+    status: String(data.get("status") || "draft")
+  };
+  item.slug = existing?.slug || createPortalSlug(item.businessName);
+  if (!item.businessName) {
+    document.querySelector("#umkmFormError").textContent = "Nama usaha wajib diisi.";
+    return;
+  }
+  appState.portalUmkm = [item, ...appState.portalUmkm.filter((row) => String(row.id) !== String(item.id))];
+  await syncRowToPostgres("umkm", item);
+  appState.selectedUmkmId = null;
+  appState.umkmModalOpen = false;
+  renderUmkmAdmin();
+}
+
+function renderSimplePortalRows(items, columns, editAttr, deleteAttr, emptyText) {
+  if (!items.length) return `<div class="empty-state">${emptyText}</div>`;
+  const rows = items.map((item) => `
+    <tr>
+      ${columns.map((column) => `<td>${column.render(item)}</td>`).join("")}
+      <td>${renderPortalActionButtons(item.id, editAttr, deleteAttr)}</td>
+    </tr>
+  `).join("");
+  return `<div class="table-wrap"><table><thead><tr>${columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("")}<th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+export function renderCitizenServicesAdmin() {
+  const session = getSession();
+  if (!requirePortalAdmin(session)) return navigate("/dashboard");
+  const editingDeath = appState.deathServices.find((item) => String(item.id) === String(appState.selectedDeathServiceId));
+  const editingAid = appState.aidRequests.find((item) => String(item.id) === String(appState.selectedAidRequestId));
+  const editingMosque = appState.mosques.find((item) => String(item.id) === String(appState.selectedMosqueId));
+
+  renderAppShell(session, "Layanan Warga", `
+    <section class="public-panel">
+      <div class="panel-heading">
+        <div><p class="eyebrow">Layanan Warga</p><h2>Berita duka</h2></div>
+        <button class="primary-button compact" id="addDeathServiceButton" type="button">Tambah Berita Duka</button>
+      </div>
+      ${renderSimplePortalRows(appState.deathServices, [
+        { label: "Nama", render: (item) => `<strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.address || "-")}</span>` },
+        { label: "Hari Wafat", render: (item) => escapeHtml(item.deathDate || "-") },
+        { label: "Rumah Duka", render: (item) => escapeHtml(item.funeralHome || "-") },
+        { label: "Status", render: (item) => `<span class="status-pill ${item.status === "published" ? "success" : "warning"}">${escapeHtml(item.status)}</span>` }
+      ], "data-edit-death", "data-delete-death", "Belum ada berita duka.")}
+    </section>
+    ${appState.deathServiceModalOpen ? renderDeathServiceForm(editingDeath) : ""}
+
+    <section class="public-panel">
+      <div class="panel-heading">
+        <div><p class="eyebrow">Layanan Warga</p><h2>Pengajuan bantuan</h2></div>
+        <button class="primary-button compact" id="addAidRequestButton" type="button">Tambah Pengajuan</button>
+      </div>
+      ${renderSimplePortalRows(appState.aidRequests, [
+        { label: "Nama", render: (item) => `<strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.address || "-")}</span>` },
+        { label: "Jenis", render: (item) => escapeHtml(item.aidType || "-") },
+        { label: "WhatsApp", render: (item) => escapeHtml(item.whatsapp || "-") },
+        { label: "Status", render: (item) => `<span class="status-pill warning">${escapeHtml(item.status)}</span>` }
+      ], "data-edit-aid", "data-delete-aid", "Belum ada pengajuan bantuan.")}
+    </section>
+    ${appState.aidRequestModalOpen ? renderAidRequestForm(editingAid) : ""}
+
+    <section class="public-panel">
+      <div class="panel-heading">
+        <div><p class="eyebrow">Direktori Ibadah</p><h2>Masjid dan mushola</h2></div>
+        <button class="primary-button compact" id="addMosqueButton" type="button">Tambah Tempat Ibadah</button>
+      </div>
+      ${renderSimplePortalRows(appState.mosques, [
+        { label: "Nama", render: (item) => `<strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.type || "-")}</span>` },
+        { label: "Alamat", render: (item) => escapeHtml(item.address || "-") },
+        { label: "Takmir", render: (item) => escapeHtml(item.caretaker || "-") },
+        { label: "Status", render: (item) => `<span class="status-pill ${item.status === "published" ? "success" : "warning"}">${escapeHtml(item.status)}</span>` }
+      ], "data-edit-mosque", "data-delete-mosque", "Belum ada data masjid/mushola.")}
+    </section>
+    ${appState.mosqueModalOpen ? renderMosqueForm(editingMosque) : ""}
+  `);
+  bindCitizenServiceEvents();
+}
+
+function renderDeathServiceForm(editing) {
+  return `
+    <section class="public-panel">
+      <div class="panel-heading"><div><p class="eyebrow">Form</p><h2>${editing ? "Edit" : "Tambah"} Berita Duka</h2></div></div>
+      <form class="public-upload-form" id="deathServiceForm">
+        <div class="form-grid">
+          <label class="field"><span>Nama Almarhum/Almarhumah</span><input name="name" value="${escapeHtml(editing?.name || "")}" required /></label>
+          <label class="field"><span>Hari/Tanggal Wafat</span><input name="deathDate" value="${escapeHtml(editing?.deathDate || getLocalDateString())}" /></label>
+          <label class="field"><span>Rumah Duka</span><input name="funeralHome" value="${escapeHtml(editing?.funeralHome || "")}" /></label>
+          <label class="field"><span>Kontak Keluarga</span><input name="familyContact" value="${escapeHtml(editing?.familyContact || "")}" /></label>
+          <label class="field"><span>Status</span><select name="status">${portalStatusOptions(editing?.status || "draft")}</select></label>
+        </div>
+        <label class="field"><span>Alamat</span><textarea name="address">${escapeHtml(editing?.address || "")}</textarea></label>
+        <p class="form-error" id="deathServiceFormError" role="alert"></p>
+        <button class="primary-button compact" type="submit">Simpan Berita Duka</button>
+        <button class="ghost-button" id="cancelDeathServiceButton" type="button">Batal</button>
+      </form>
+    </section>`;
+}
+
+function renderAidRequestForm(editing) {
+  return `
+    <section class="public-panel">
+      <div class="panel-heading"><div><p class="eyebrow">Form</p><h2>${editing ? "Edit" : "Tambah"} Pengajuan Bantuan</h2></div></div>
+      <form class="public-upload-form" id="aidRequestForm">
+        <div class="form-grid">
+          <label class="field"><span>Nama</span><input name="name" value="${escapeHtml(editing?.name || "")}" required /></label>
+          <label class="field"><span>WhatsApp</span><input name="whatsapp" value="${escapeHtml(editing?.whatsapp || "")}" /></label>
+          <label class="field"><span>Jenis Bantuan</span><input name="aidType" value="${escapeHtml(editing?.aidType || "")}" /></label>
+          <label class="field"><span>Status</span><select name="status">${portalStatusOptions(editing?.status || "baru", ["baru", "diproses", "selesai", "ditolak"])}</select></label>
+        </div>
+        <label class="field"><span>Alamat</span><textarea name="address">${escapeHtml(editing?.address || "")}</textarea></label>
+        <label class="field"><span>Keterangan</span><textarea name="note">${escapeHtml(editing?.note || "")}</textarea></label>
+        <p class="form-error" id="aidRequestFormError" role="alert"></p>
+        <button class="primary-button compact" type="submit">Simpan Pengajuan</button>
+        <button class="ghost-button" id="cancelAidRequestButton" type="button">Batal</button>
+      </form>
+    </section>`;
+}
+
+function renderMosqueForm(editing) {
+  return `
+    <section class="public-panel">
+      <div class="panel-heading"><div><p class="eyebrow">Form</p><h2>${editing ? "Edit" : "Tambah"} Masjid/Mushola</h2></div></div>
+      <form class="public-upload-form" id="mosqueForm">
+        <div class="form-grid">
+          <label class="field"><span>Nama</span><input name="name" value="${escapeHtml(editing?.name || "")}" required /></label>
+          <label class="field"><span>Jenis</span><select name="type"><option value="Masjid" ${editing?.type !== "Mushola" ? "selected" : ""}>Masjid</option><option value="Mushola" ${editing?.type === "Mushola" ? "selected" : ""}>Mushola</option></select></label>
+          <label class="field"><span>Takmir</span><input name="caretaker" value="${escapeHtml(editing?.caretaker || "")}" /></label>
+          <label class="field"><span>Kontak</span><input name="contact" value="${escapeHtml(editing?.contact || "")}" /></label>
+          <label class="field"><span>Status</span><select name="status">${portalStatusOptions(editing?.status || "draft")}</select></label>
+        </div>
+        <label class="field"><span>Alamat</span><textarea name="address">${escapeHtml(editing?.address || "")}</textarea></label>
+        <p class="form-error" id="mosqueFormError" role="alert"></p>
+        <button class="primary-button compact" type="submit">Simpan Tempat Ibadah</button>
+        <button class="ghost-button" id="cancelMosqueButton" type="button">Batal</button>
+      </form>
+    </section>`;
+}
+
+function bindCitizenServiceEvents() {
+  document.querySelector("#addDeathServiceButton")?.addEventListener("click", () => { appState.selectedDeathServiceId = null; appState.deathServiceModalOpen = true; renderCitizenServicesAdmin(); });
+  document.querySelector("#cancelDeathServiceButton")?.addEventListener("click", () => { appState.selectedDeathServiceId = null; appState.deathServiceModalOpen = false; renderCitizenServicesAdmin(); });
+  document.querySelectorAll("[data-edit-death]").forEach((button) => button.addEventListener("click", () => { appState.selectedDeathServiceId = button.dataset.editDeath; appState.deathServiceModalOpen = true; renderCitizenServicesAdmin(); }));
+  document.querySelectorAll("[data-delete-death]").forEach((button) => button.addEventListener("click", async () => {
+    if (!confirm("Hapus berita duka ini?")) return;
+    if (!await deleteRowFromPostgres("layanan_kematian", button.dataset.deleteDeath)) return;
+    appState.deathServices = appState.deathServices.filter((item) => String(item.id) !== String(button.dataset.deleteDeath));
+    renderCitizenServicesAdmin();
+  }));
+
+  document.querySelector("#addAidRequestButton")?.addEventListener("click", () => { appState.selectedAidRequestId = null; appState.aidRequestModalOpen = true; renderCitizenServicesAdmin(); });
+  document.querySelector("#cancelAidRequestButton")?.addEventListener("click", () => { appState.selectedAidRequestId = null; appState.aidRequestModalOpen = false; renderCitizenServicesAdmin(); });
+  document.querySelectorAll("[data-edit-aid]").forEach((button) => button.addEventListener("click", () => { appState.selectedAidRequestId = button.dataset.editAid; appState.aidRequestModalOpen = true; renderCitizenServicesAdmin(); }));
+  document.querySelectorAll("[data-delete-aid]").forEach((button) => button.addEventListener("click", async () => {
+    if (!confirm("Hapus pengajuan bantuan ini?")) return;
+    if (!await deleteRowFromPostgres("pengajuan_bantuan", button.dataset.deleteAid)) return;
+    appState.aidRequests = appState.aidRequests.filter((item) => String(item.id) !== String(button.dataset.deleteAid));
+    renderCitizenServicesAdmin();
+  }));
+
+  document.querySelector("#addMosqueButton")?.addEventListener("click", () => { appState.selectedMosqueId = null; appState.mosqueModalOpen = true; renderCitizenServicesAdmin(); });
+  document.querySelector("#cancelMosqueButton")?.addEventListener("click", () => { appState.selectedMosqueId = null; appState.mosqueModalOpen = false; renderCitizenServicesAdmin(); });
+  document.querySelectorAll("[data-edit-mosque]").forEach((button) => button.addEventListener("click", () => { appState.selectedMosqueId = button.dataset.editMosque; appState.mosqueModalOpen = true; renderCitizenServicesAdmin(); }));
+  document.querySelectorAll("[data-delete-mosque]").forEach((button) => button.addEventListener("click", async () => {
+    if (!confirm("Hapus data masjid/mushola ini?")) return;
+    if (!await deleteRowFromPostgres("masjid_mushola", button.dataset.deleteMosque)) return;
+    appState.mosques = appState.mosques.filter((item) => String(item.id) !== String(button.dataset.deleteMosque));
+    renderCitizenServicesAdmin();
+  }));
+
+  document.querySelector("#deathServiceForm")?.addEventListener("submit", handleDeathServiceSubmit);
+  document.querySelector("#aidRequestForm")?.addEventListener("submit", handleAidRequestSubmit);
+  document.querySelector("#mosqueForm")?.addEventListener("submit", handleMosqueSubmit);
+}
+
+export async function handleDeathServiceSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const existing = appState.deathServices.find((item) => String(item.id) === String(appState.selectedDeathServiceId));
+  const item = {
+    id: existing?.id || `duka-${Date.now()}`,
+    name: String(data.get("name") || "").trim(),
+    address: String(data.get("address") || "").trim(),
+    deathDate: String(data.get("deathDate") || "").trim(),
+    funeralHome: String(data.get("funeralHome") || "").trim(),
+    familyContact: String(data.get("familyContact") || "").trim(),
+    status: String(data.get("status") || "draft")
+  };
+  if (!item.name) { document.querySelector("#deathServiceFormError").textContent = "Nama almarhum/almarhumah wajib diisi."; return; }
+  appState.deathServices = [item, ...appState.deathServices.filter((row) => String(row.id) !== String(item.id))];
+  await syncRowToPostgres("layanan_kematian", item);
+  appState.selectedDeathServiceId = null;
+  appState.deathServiceModalOpen = false;
+  renderCitizenServicesAdmin();
+}
+
+export async function handleAidRequestSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const existing = appState.aidRequests.find((item) => String(item.id) === String(appState.selectedAidRequestId));
+  const item = {
+    id: existing?.id || `bantuan-${Date.now()}`,
+    name: String(data.get("name") || "").trim(),
+    address: String(data.get("address") || "").trim(),
+    whatsapp: String(data.get("whatsapp") || "").trim(),
+    aidType: String(data.get("aidType") || "").trim(),
+    note: String(data.get("note") || "").trim(),
+    status: String(data.get("status") || "baru")
+  };
+  if (!item.name) { document.querySelector("#aidRequestFormError").textContent = "Nama pemohon wajib diisi."; return; }
+  appState.aidRequests = [item, ...appState.aidRequests.filter((row) => String(row.id) !== String(item.id))];
+  await syncRowToPostgres("pengajuan_bantuan", item);
+  appState.selectedAidRequestId = null;
+  appState.aidRequestModalOpen = false;
+  renderCitizenServicesAdmin();
+}
+
+export async function handleMosqueSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const existing = appState.mosques.find((item) => String(item.id) === String(appState.selectedMosqueId));
+  const item = {
+    id: existing?.id || `masjid-${Date.now()}`,
+    name: String(data.get("name") || "").trim(),
+    type: String(data.get("type") || "Masjid"),
+    address: String(data.get("address") || "").trim(),
+    caretaker: String(data.get("caretaker") || "").trim(),
+    contact: String(data.get("contact") || "").trim(),
+    status: String(data.get("status") || "draft")
+  };
+  if (!item.name) { document.querySelector("#mosqueFormError").textContent = "Nama masjid/mushola wajib diisi."; return; }
+  appState.mosques = [item, ...appState.mosques.filter((row) => String(row.id) !== String(item.id))];
+  await syncRowToPostgres("masjid_mushola", item);
+  appState.selectedMosqueId = null;
+  appState.mosqueModalOpen = false;
+  renderCitizenServicesAdmin();
+}
 
 

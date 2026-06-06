@@ -40,6 +40,8 @@ import {
   renderOfficerDeposits,
   renderLazisnuDeposits,
   renderDistributions,
+  renderUmkmAdmin,
+  renderCitizenServicesAdmin,
   renderNewsAdmin,
   renderProfile,
   renderBoardMembers,
@@ -133,6 +135,14 @@ function render() {
   }
   if (path === "/penyaluran-dana") {
     renderDistributions();
+    return;
+  }
+  if (path === "/umkm-warga") {
+    renderUmkmAdmin();
+    return;
+  }
+  if (path === "/layanan-warga") {
+    renderCitizenServicesAdmin();
     return;
   }
   if (path === "/berita") {

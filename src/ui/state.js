@@ -446,6 +446,10 @@ export const appState = {
   lazisnuDeposits: [...demoData.lazisnuDeposits],
   publicDocumentation: [...demoData.publicDocumentation],
   news: [...demoData.news],
+  portalUmkm: [],
+  deathServices: [],
+  aidRequests: [],
+  mosques: [],
   pickups: demoData.pickups.map((pickup) => ({
     ...pickup,
     verificationAudit: pickup.status === "Menunggu Verifikasi" ? [] : [{
@@ -518,6 +522,14 @@ export const appState = {
   boardStatus: "all",
   boardOrg: "all",
   galleryFilterOrg: "all",
+  selectedUmkmId: null,
+  umkmModalOpen: false,
+  selectedDeathServiceId: null,
+  deathServiceModalOpen: false,
+  selectedAidRequestId: null,
+  aidRequestModalOpen: false,
+  selectedMosqueId: null,
+  mosqueModalOpen: false,
   selectedBoardId: null,
   boardModalMode: null,
   settingsEditMode: false,
@@ -560,6 +572,8 @@ export const navigationItems = [
   { label: "Setoran Petugas", path: "/setoran-petugas", icon: "coin" },
   { label: "Setor ke LAZISNU", path: "/setor-lazisnu", icon: "report" },
   { label: "Penyaluran Dana", path: "/penyaluran-dana", icon: "report" },
+  { label: "UMKM Warga", path: "/umkm-warga", icon: "report" },
+  { label: "Layanan Warga", path: "/layanan-warga", icon: "report" },
   { label: "Berita", path: "/berita", icon: "report" },
   { label: "Laporan", path: "/laporan", icon: "report" },
   { label: "Kelola User", path: "/users", icon: "users" },
@@ -606,6 +620,9 @@ export function canAccessPath(session, path) {
     return isAdminRole(session.role);
   }
   if (path === "/pengaturan") {
+    return isAdminRole(session.role);
+  }
+  if (["/umkm-warga", "/layanan-warga"].includes(path)) {
     return isAdminRole(session.role);
   }
   if (session.role === "editor_berita") {
@@ -1041,6 +1058,46 @@ export function mapDbToAppState(data) {
     status: item.status || "draft",
     organization: item.organisasi || item.organization || "ranting"
   }));
+  appState.portalUmkm = (data.umkm || []).map((item) => ({
+    id: item.id,
+    businessName: item.nama_usaha || "",
+    slug: item.slug || "",
+    owner: item.pemilik || "",
+    category: item.kategori || "",
+    products: item.produk || "",
+    whatsapp: item.whatsapp || "",
+    address: item.alamat || "",
+    description: item.deskripsi || "",
+    photoUrl: item.foto_url || "",
+    status: item.status || "draft"
+  }));
+  appState.deathServices = (data.layanan_kematian || []).map((item) => ({
+    id: item.id,
+    name: item.nama_almarhum || "",
+    address: item.alamat || "",
+    deathDate: item.hari_wafat || "",
+    funeralHome: item.rumah_duka || "",
+    familyContact: item.kontak_keluarga || "",
+    status: item.status_publikasi || "draft"
+  }));
+  appState.aidRequests = (data.pengajuan_bantuan || []).map((item) => ({
+    id: item.id,
+    name: item.nama || "",
+    address: item.alamat || "",
+    whatsapp: item.whatsapp || "",
+    aidType: item.jenis_bantuan || "",
+    note: item.keterangan || "",
+    status: item.status || "baru"
+  }));
+  appState.mosques = (data.masjid_mushola || []).map((item) => ({
+    id: item.id,
+    name: item.nama || "",
+    type: item.jenis || "Masjid",
+    address: item.alamat || "",
+    caretaker: item.takmir || "",
+    contact: item.kontak || "",
+    status: item.status || "draft"
+  }));
   appState.boardMembers = (data.pengurus?.length ? data.pengurus : demoData.boardMembers).map((item) => ({
     id: item.id,
     position: item.jabatan || item.position,
@@ -1206,6 +1263,58 @@ export function toDbRows(table) {
       gambar_nama: item.imageName,
       status: item.status || "draft",
       organisasi: item.organization || "ranting"
+    }));
+  }
+
+  if (table === "umkm") {
+    return appState.portalUmkm.map((item) => ({
+      id: item.id,
+      nama_usaha: item.businessName,
+      slug: item.slug,
+      pemilik: item.owner,
+      kategori: item.category,
+      produk: item.products,
+      whatsapp: item.whatsapp,
+      alamat: item.address,
+      deskripsi: item.description,
+      foto_url: item.photoUrl,
+      status: item.status || "draft"
+    }));
+  }
+
+  if (table === "layanan_kematian") {
+    return appState.deathServices.map((item) => ({
+      id: item.id,
+      nama_almarhum: item.name,
+      alamat: item.address,
+      hari_wafat: item.deathDate,
+      rumah_duka: item.funeralHome,
+      kontak_keluarga: item.familyContact,
+      status_publikasi: item.status || "draft"
+    }));
+  }
+
+  if (table === "pengajuan_bantuan") {
+    return appState.aidRequests.map((item) => ({
+      id: item.id,
+      nama: item.name,
+      alamat: item.address,
+      whatsapp: item.whatsapp,
+      jenis_bantuan: item.aidType,
+      keterangan: item.note,
+      status: item.status || "baru"
+    }));
+  }
+
+  if (table === "masjid_mushola") {
+    return appState.mosques.map((item) => ({
+      id: item.id,
+      nama: item.name,
+      jenis: item.type,
+      alamat: item.address,
+      takmir: item.caretaker,
+      kontak: item.contact,
+      status: item.status || "draft"
     }));
   }
 
