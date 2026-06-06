@@ -535,7 +535,7 @@ function initializeDistributionMap() {
       <div class="map-popup-card" style="min-width: 180px;">
         <h4 style="margin:0 0 4px; color:#15803d; font-size: 0.9rem; font-weight: bold;">${escapeHtml(item.category)}</h4>
         <div style="font-size:0.7rem; color:#666; margin-bottom:6px;">No: ${escapeHtml(item.distributionNo)}</div>
-        <table style="width:100%; border-collapse:collapse; font-size:0.75rem; text-align:left;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.75rem; text-align:center;">
           <tr>
             <th style="padding:2px 0; color:#888; font-weight:normal; width:45%;">Penerima</th>
             <td style="padding:2px 0; font-weight:bold;">${escapeHtml(item.recipientName)}</td>
@@ -727,7 +727,7 @@ export function renderLandingPage() {
                 <small id="hero-clock-panel">Waktu: <span id="hero-clock">--:--:--</span> WIB</small>
               </div>
             </div>
-            <div class="hero-card-welcome-message" style="margin-top: 1rem; text-align: left; width: 100%;">
+            <div class="hero-card-welcome-message" style="margin-top: 1rem; text-align: center; width: 100%;">
               <p style="font-size: 0.88rem; line-height: 1.5; color: rgba(255,255,255,0.85); font-style: italic; border-left: 2px solid var(--gold); padding-left: 0.75rem;">
                 "Merawat Tradisi, Menguatkan Khidmah, Membangun Umat. Sistem Informasi Pengelolaan Kotak Infaq Nahdlatul Ulama."
               </p>
@@ -1005,7 +1005,7 @@ export function renderLandingPage() {
           <div class="landing-donation-stat">
             <small>Gerakan bersama</small>
             <strong>Koin NU Ranting</strong>
-            <div class="program-progress-container" style="width: 100%; margin: 1.25rem 0 0.75rem; text-align: left;">
+            <div class="program-progress-container" style="width: 100%; margin: 1.25rem 0 0.75rem; text-align: center;">
               <div class="program-progress-bar" style="background: rgba(255,255,255,0.12);">
                 <div class="program-progress-fill" style="width: ${totalPercentage}%;"></div>
               </div>
@@ -1056,7 +1056,7 @@ export function renderLandingPage() {
                     </label>
                   </div>
                   
-                  <div class="calc-results" style="background: rgba(11,107,58,0.15); border: 1px solid rgba(11,107,58,0.3); border-radius: var(--radius-md); padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem; text-align: left;">
+                  <div class="calc-results" style="background: rgba(11,107,58,0.15); border: 1px solid rgba(11,107,58,0.3); border-radius: var(--radius-md); padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem; text-align: center;">
                     <h3 style="margin: 0 0 0.5rem; font-size: 1.15rem; color: var(--gold-light); font-family: var(--font-serif); font-weight: 700;">Hasil Perhitungan</h3>
                     <div style="display: flex; justify-content: space-between; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.5rem;">
                       <span style="color: rgba(255,255,255,0.7);">Total Pendapatan:</span>
@@ -1105,7 +1105,7 @@ export function renderLandingPage() {
                     </label>
                   </div>
                   
-                  <div class="calc-results" style="background: rgba(11,107,58,0.15); border: 1px solid rgba(11,107,58,0.3); border-radius: var(--radius-md); padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem; text-align: left;">
+                  <div class="calc-results" style="background: rgba(11,107,58,0.15); border: 1px solid rgba(11,107,58,0.3); border-radius: var(--radius-md); padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem; text-align: center;">
                     <h3 style="margin: 0 0 0.5rem; font-size: 1.15rem; color: var(--gold-light); font-family: var(--font-serif); font-weight: 700;">Hasil Perhitungan</h3>
                     <div style="display: flex; justify-content: space-between; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.5rem;">
                       <span style="color: rgba(255,255,255,0.7);">Total Harta Bersih:</span>
@@ -1143,7 +1143,7 @@ export function renderLandingPage() {
                     </label>
                   </div>
                   
-                  <div class="calc-results" style="background: rgba(11,107,58,0.15); border: 1px solid rgba(11,107,58,0.3); border-radius: var(--radius-md); padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem; text-align: left;">
+                  <div class="calc-results" style="background: rgba(11,107,58,0.15); border: 1px solid rgba(11,107,58,0.3); border-radius: var(--radius-md); padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem; text-align: center;">
                     <h3 style="margin: 0 0 0.5rem; font-size: 1.15rem; color: var(--gold-light); font-family: var(--font-serif); font-weight: 700;">Hasil Perhitungan</h3>
                     <div style="display: flex; justify-content: space-between; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.5rem;">
                       <span style="color: rgba(255,255,255,0.7);">Kebutuhan Beras:</span>
@@ -1360,7 +1360,7 @@ export function renderLandingPage() {
       const body = document.querySelector("#news-dialog-body");
       if (body) {
         body.innerHTML = `
-          <div class="news-dialog-header" style="text-align: left; margin-bottom: 1.5rem;">
+          <div class="news-dialog-header" style="text-align: center; margin-bottom: 1.5rem;">
             <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; font-weight:700; color:var(--gold-dark); text-transform:uppercase; margin-bottom:0.5rem;">
               <span>${escapeHtml(item.category)}</span>
               <span>${formatDateId(item.date)}</span>
@@ -1368,7 +1368,7 @@ export function renderLandingPage() {
             <h2 style="font-family:var(--font-serif); font-size:1.8rem; line-height:1.3; color:var(--neutral-dark); margin:0;">${escapeHtml(item.title)}</h2>
           </div>
           <img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.title)}" style="width:100%; height:280px; object-fit:cover; border-radius:var(--radius-md); margin-bottom:1.5rem; box-shadow:var(--shadow-sm);" />
-          <div class="news-dialog-text" style="font-size:0.95rem; line-height:1.7; color:var(--neutral-mid); text-align:left;">
+          <div class="news-dialog-text" style="font-size:0.95rem; line-height:1.7; color:var(--neutral-mid); text-align:center;">
             ${item.content.split("\n").filter(Boolean).map(p => `<p style="margin-bottom:1rem;">${escapeHtml(p)}</p>`).join("")}
           </div>
         `;
@@ -1427,7 +1427,7 @@ function getZakatNiatHtml(category) {
   if (!niat) return "";
 
   return `
-    <div class="zakat-niat-container" style="background: #fafaf9; border: 1.5px solid var(--gold-light); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem; text-align: left; box-shadow: var(--shadow-sm);">
+    <div class="zakat-niat-container" style="background: #fafaf9; border: 1.5px solid var(--gold-light); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem; text-align: center; box-shadow: var(--shadow-sm);">
       <details style="width: 100%; cursor: pointer;" open>
         <summary style="font-size: 0.9rem; font-weight: 700; color: var(--primary-dark); display: flex; justify-content: space-between; align-items: center; user-select: none;">
           <span style="display: flex; align-items: center; gap: 0.5rem;">
@@ -1564,7 +1564,7 @@ function bindBankTransferEvents() {
 
 function getQrisSetupTabHtml() {
   return `
-    <form id="qris-setup-form" style="display:flex; flex-direction:column; gap:1.2rem; text-align:left;">
+    <form id="qris-setup-form" style="display:flex; flex-direction:column; gap:1.2rem; text-align:center;">
       <label class="form-group-label" style="display:flex; flex-direction:column; gap:0.4rem;">
         <span style="font-size:0.85rem; font-weight:700; color:var(--neutral-dark);">Nama Donatur (Opsional)</span>
         <input type="text" id="qris-donor-name" placeholder="Hamba Allah" style="padding:0.7rem; border:1px solid var(--border-light); border-radius:var(--radius-sm); font-size:0.9rem;" />
@@ -2014,7 +2014,7 @@ window.openNewsReader = function(id) {
   const body = document.querySelector("#news-dialog-body");
   if (body && newsDialog) {
     body.innerHTML = `
-      <div class="news-dialog-header" style="text-align: left; margin-bottom: 1.5rem;">
+      <div class="news-dialog-header" style="text-align: center; margin-bottom: 1.5rem;">
         <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; font-weight:700; color:var(--gold-dark); text-transform:uppercase; margin-bottom:0.5rem;">
           <span>${escapeHtml(item.category)}</span>
           <span>${formatDateId(item.date)}</span>
@@ -2022,7 +2022,7 @@ window.openNewsReader = function(id) {
         <h2 style="font-family:var(--font-serif); font-size:1.8rem; line-height:1.3; color:var(--neutral-dark); margin:0;">${escapeHtml(item.title)}</h2>
       </div>
       <img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.title)}" style="width:100%; height:280px; object-fit:cover; border-radius:var(--radius-md); margin-bottom:1.5rem; box-shadow:var(--shadow-sm);" />
-      <div class="news-dialog-text" style="font-size:0.95rem; line-height:1.7; color:var(--neutral-mid); text-align:left;">
+      <div class="news-dialog-text" style="font-size:0.95rem; line-height:1.7; color:var(--neutral-mid); text-align:center;">
         ${item.content.split("\n").filter(Boolean).map(p => `<p style="margin-bottom:1rem;">${escapeHtml(p)}</p>`).join("")}
       </div>
     `;

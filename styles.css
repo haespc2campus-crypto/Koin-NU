@@ -376,14 +376,16 @@ button, input, select, textarea {
 
 /* Authentication Page - Shell */
 .page-shell {
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 4rem;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  width: min(76rem, calc(100% - 3rem));
+  justify-content: center;
+  gap: 2.5rem;
+  width: min(44rem, calc(100% - 3rem));
   min-height: 100vh;
   margin: 0 auto;
   padding: 3rem 0;
+  text-align: center;
 }
 
 .brand-panel {
@@ -1192,10 +1194,11 @@ td span {
   padding: 10rem max(1.5rem, calc((100vw - 72rem)/2)) 6rem;
   background: linear-gradient(135deg, var(--nu-dark) 0%, var(--nu) 60%, hsl(150, 78%, 28%) 100%);
   color: #fff;
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 3.5rem;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  text-align: center;
+  gap: 3.5rem;
   position: relative;
   overflow: hidden;
 }
@@ -1239,6 +1242,7 @@ td span {
   display: flex;
   gap: 0.85rem;
   margin-top: 2rem;
+  justify-content: center;
 }
 
 .landing-button {
@@ -1365,6 +1369,8 @@ td span {
   gap: 1.5rem;
   position: relative;
   overflow: hidden;
+  width: 100%;
+  max-width: 28rem;
 }
 
 .hero-card-pattern-overlay {
@@ -1378,6 +1384,7 @@ td span {
 
 .hero-card-branding {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 1rem;
   width: 100%;
@@ -1397,7 +1404,7 @@ td span {
 }
 
 .hero-card-branding div {
-  text-align: left;
+  text-align: center;
 }
 
 .hero-card-branding div strong {
@@ -1441,6 +1448,14 @@ td span {
   color: var(--gold-dark);
 }
 
+.banom-grid-two {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2.5rem;
+}
+
 .landing-intro {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1468,15 +1483,16 @@ td span {
 
 .landing-heading-row {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 2rem;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
   margin-bottom: 3rem;
 }
 
 .landing-heading-row > p {
-  max-width: 26rem;
-  margin: 0;
+  max-width: 38rem;
+  margin: 0 auto;
 }
 
 /* Program Section Grid */
@@ -1871,10 +1887,11 @@ td span {
   background: linear-gradient(135deg, var(--nu-dark) 0%, var(--nu) 100%);
   padding: 6rem max(1.5rem, calc((100vw - 72rem)/2));
   color: #fff;
-  display: grid;
-  grid-template-columns: 1.5fr 0.5fr;
-  gap: 4rem;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  text-align: center;
+  gap: 2.5rem;
 }
 
 .landing-donation p:not(.landing-kicker) {
@@ -1967,8 +1984,10 @@ td span {
 
 .landing-footer {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
+  text-align: center;
+  gap: 0.75rem;
   padding: 2rem 0;
   border-top: 1px solid var(--border-light);
   max-width: 72rem;
@@ -2069,10 +2088,11 @@ td span {
   position: relative;
   overflow: hidden;
   box-shadow: var(--shadow-lg);
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 3.5rem;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  text-align: center;
+  gap: 2.5rem;
 }
 
 .public-hero::before {
@@ -2697,7 +2717,7 @@ td span {
   border-radius: var(--radius-md);
   padding: 1.25rem;
   box-shadow: var(--shadow-sm);
-  text-align: left;
+  text-align: center;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -2938,20 +2958,17 @@ td span {
   }
   
   .landing-hero {
-    grid-template-columns: 1fr;
     padding-top: 8rem;
     padding-bottom: 4rem;
   }
   
   .landing-hero-card {
-    display: flex;
     width: 100%;
-    max-width: 28rem;
-    margin: 0 auto;
+    max-width: 24rem;
   }
   
   .landing-intro, .landing-gallery, .landing-contact, .landing-donation {
-    grid-template-columns: 1fr;
+    gap: 2rem;
   }
 
   .landing-events-grid {
@@ -2981,7 +2998,6 @@ td span {
   
   .public-hero {
     padding: 3rem 2rem;
-    grid-template-columns: 1fr;
     gap: 2rem;
   }
   
@@ -3229,7 +3245,7 @@ td span {
 }
 
 .quick-feature-info {
-  text-align: left;
+  text-align: center;
 }
 
 .quick-feature-info h4 {
@@ -3248,21 +3264,21 @@ td span {
 
 /* Redesigned About Section Grid and Image Arch */
 .landing-intro {
-  display: grid;
-  grid-template-columns: 1.15fr 0.85fr !important;
-  gap: 4.5rem !important;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  text-align: center;
+  gap: 3rem !important;
 }
 
 @media (max-width: 768px) {
   .landing-intro {
-    grid-template-columns: 1fr !important;
-    gap: 3rem !important;
+    gap: 2rem !important;
   }
 }
 
 .landing-intro-left {
-  text-align: left;
+  text-align: center;
 }
 
 .landing-intro-desc {
@@ -3282,8 +3298,9 @@ td span {
 
 .landing-checklist li {
   display: flex;
-  gap: 0.95rem;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
 }
 
 .checklist-icon {
@@ -3304,7 +3321,7 @@ td span {
 }
 
 .landing-checklist li div {
-  text-align: left;
+  text-align: center;
   line-height: 1.5;
 }
 
@@ -3507,9 +3524,10 @@ td span {
   min-height: 12.5rem;
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: space-between;
   transition: var(--transition);
-  text-align: left;
+  text-align: center;
 }
 
 .landing-institution-card:hover {
@@ -3575,8 +3593,9 @@ td span {
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
+  align-items: center;
   flex: 1;
-  text-align: left;
+  text-align: center;
 }
 
 .news-card-content small {
@@ -3658,16 +3677,16 @@ td span {
 
 /* Contact Grid & Map structure adjustments */
 .landing-contact {
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr !important;
-  gap: 4rem !important;
-  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 3rem !important;
 }
 
 @media (max-width: 768px) {
   .landing-contact {
-    grid-template-columns: 1fr !important;
-    gap: 3rem !important;
+    gap: 2rem !important;
   }
 }
 
@@ -3781,7 +3800,7 @@ dialog::backdrop {
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
   padding: 1.25rem;
-  text-align: left;
+  text-align: center;
 }
 
 .method-header {
@@ -3797,9 +3816,9 @@ dialog::backdrop {
 
 .method-body {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .method-body strong {
@@ -3877,11 +3896,11 @@ dialog::backdrop {
   max-width: 72rem;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1.25fr 0.75fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 4rem;
   padding-bottom: 3.5rem;
   border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
-  text-align: left;
+  text-align: center;
 }
 
 @media (max-width: 768px) {
@@ -4601,10 +4620,11 @@ dialog::backdrop {
   padding: 1.5rem;
   width: 100%;
   max-width: 380px;
+  margin: 0 auto;
   box-shadow: var(--shadow-md);
   position: relative;
   font-family: var(--font-sans);
-  text-align: left;
+  text-align: center;
 }
 
 .receipt-header {
@@ -4958,10 +4978,11 @@ dialog::backdrop {
 
 /* Grid & Text Columns */
 .banom-grid-two {
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 4rem;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  text-align: center;
+  gap: 2.5rem;
 }
 
 .banom-desc-p {
@@ -5550,7 +5571,7 @@ dialog::backdrop {
    ============================================ */
 @media (max-width: 768px) {
   .banom-hero h1 { font-size: 2.25rem; }
-  .banom-grid-two { grid-template-columns: 1fr; gap: 2rem; }
+  .banom-grid-two { gap: 2rem; }
   .banom-logo-wrap { width: 180px; height: 180px; }
   .banom-header { flex-direction: column; gap: 1rem; padding: 1rem; }
   .banom-nav-right { width: 100%; justify-content: space-between; }
