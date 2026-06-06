@@ -612,6 +612,26 @@ export function renderLandingPage() {
   const totalIncome = getPublicApprovedIncome();
   const totalTarget = 50000000;
   const totalPercentage = Math.min(100, Math.round((totalIncome / totalTarget) * 100));
+  const activeDonors = appState.donors.filter((item) => item.active !== false).length;
+  const activeOfficers = appState.officers.filter((item) => item.active !== false).length;
+  const distributedFunds = appState.distributions
+    .filter((item) => item.status === "Disalurkan")
+    .reduce((sum, item) => sum + item.amount, 0);
+  const portalAnnouncements = [
+    { title: "Pendataan layanan warga dan UMKM dimulai", copy: "Pengurus membuka pendataan UMKM, masjid/mushola, dan kebutuhan layanan warga Karangsalam Kidul II.", tag: "Layanan Warga" },
+    { title: "Setoran Koin NU dicatat transparan", copy: "Warga dapat memantau ringkasan pemasukan dan penyaluran melalui halaman transparansi.", tag: "Koin NU" }
+  ];
+  const citizenServices = [
+    { title: "Layanan Kematian", copy: "Informasi rumah duka, jadwal tahlil, dan kontak keluarga.", href: "#kontak" },
+    { title: "Pengajuan Bantuan", copy: "Sampaikan kebutuhan bantuan sosial kepada pengurus ranting.", href: "#kontak" },
+    { title: "Data Masjid & Mushola", copy: "Pendataan tempat ibadah dan takmir di wilayah ranting.", href: "#kontak" },
+    { title: "Kontak Pengurus", copy: "Hubungi pengurus untuk kegiatan, Koin NU, dan layanan warga.", href: "#kontak" }
+  ];
+  const featuredUmkm = [
+    { name: "Warung Berkah Bu Aminah", category: "Kuliner", owner: "Siti Aminah", product: "Jajanan pasar dan nasi box", phone: "6281270000101" },
+    { name: "Mitra Tani Kaliputra", category: "Pertanian", owner: "Ahmad Fauzi", product: "Sayur, bibit, dan hasil kebun", phone: "6281270000202" },
+    { name: "Konveksi Santri Mandiri", category: "Jasa", owner: "Miftahul Huda", product: "Seragam banom dan bordir", phone: "6281270000303" }
+  ];
 
   const programs = [
     ["Aswaja", "Merawat amaliyah Aswaja An-Nahdliyah dalam kehidupan berjamaah.", `<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`],
@@ -683,6 +703,8 @@ export function renderLandingPage() {
           <a href="#profil">Profil</a>
           <a href="#jadwal-shalat">Jadwal Shalat</a>
           <a href="#program">Program</a>
+          <a href="#layanan-warga">Layanan</a>
+          <a href="#umkm">UMKM</a>
           <a href="#agenda">Agenda</a>
           <div class="nav-dropdown-wrapper">
             <span class="nav-dropdown-trigger">Banom NU ▾</span>
@@ -781,6 +803,43 @@ export function renderLandingPage() {
             </div>
           </div>
         </div>
+
+        <!-- Portal Warga Highlights -->
+        <section class="portal-overview landing-section" id="layanan-warga">
+          <div class="landing-heading-row">
+            <div>
+              <p class="landing-kicker">Portal Layanan Warga</p>
+              <h2>Satu pintu informasi,<br /><span>layanan, dan pemberdayaan.</span></h2>
+            </div>
+            <p>Beranda kini disiapkan sebagai pusat informasi warga NU Karangsalam Kidul II: mudah dibaca di HP, dekat dengan kebutuhan warga, dan tetap terhubung dengan SIKOINNU.</p>
+          </div>
+
+          <div class="portal-alert-grid">
+            ${portalAnnouncements.map((item) => `
+              <article class="portal-alert-card">
+                <small>${escapeHtml(item.tag)}</small>
+                <h3>${escapeHtml(item.title)}</h3>
+                <p>${escapeHtml(item.copy)}</p>
+              </article>
+            `).join("")}
+          </div>
+
+          <div class="portal-stats-grid">
+            <article><span>Donatur Aktif</span><strong>${activeDonors.toLocaleString("id-ID")}</strong><small>Basis warga Koin NU</small></article>
+            <article><span>Petugas Koin</span><strong>${activeOfficers.toLocaleString("id-ID")}</strong><small>Koordinasi lapangan</small></article>
+            <article><span>Koin Tervalidasi</span><strong>${formatCompactRupiah(totalIncome)}</strong><small>Masuk sistem</small></article>
+            <article><span>Dana Tersalur</span><strong>${formatCompactRupiah(distributedFunds)}</strong><small>Program sosial</small></article>
+          </div>
+
+          <div class="citizen-service-grid">
+            ${citizenServices.map((item) => `
+              <a class="citizen-service-card" href="${item.href}">
+                <strong>${escapeHtml(item.title)}</strong>
+                <span>${escapeHtml(item.copy)}</span>
+              </a>
+            `).join("")}
+          </div>
+        </section>
 
         <!-- About Section Redesign -->
         <section class="landing-intro landing-section landing-pattern-bg" id="profil">
@@ -911,6 +970,28 @@ export function renderLandingPage() {
                     <span>📍 ${ev.location}</span>
                   </div>
                 </div>
+              </article>
+            `).join("")}
+          </div>
+        </section>
+
+        <!-- UMKM Warga -->
+        <section class="landing-umkm-section landing-section landing-pattern-bg" id="umkm">
+          <div class="landing-heading-row">
+            <div>
+              <p class="landing-kicker">UMKM Warga</p>
+              <h2>Ekonomi umat tumbuh<br /><span>dari tetangga sendiri.</span></h2>
+            </div>
+            <p>Direktori UMKM disiapkan untuk membantu warga menemukan produk, jasa, dan mitra usaha di lingkungan NU Karangsalam Kidul II.</p>
+          </div>
+          <div class="umkm-card-grid">
+            ${featuredUmkm.map((item) => `
+              <article class="umkm-card">
+                <span>${escapeHtml(item.category)}</span>
+                <h3>${escapeHtml(item.name)}</h3>
+                <p>${escapeHtml(item.product)}</p>
+                <small>Pemilik: ${escapeHtml(item.owner)}</small>
+                <a href="https://wa.me/${escapeHtml(item.phone)}" target="_blank" rel="noreferrer">Hubungi via WhatsApp</a>
               </article>
             `).join("")}
           </div>

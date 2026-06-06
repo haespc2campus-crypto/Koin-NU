@@ -3283,6 +3283,170 @@ td span {
   margin: 0;
 }
 
+/* Portal warga homepage sections */
+.portal-overview {
+  background:
+    radial-gradient(circle at top left, rgba(216, 173, 69, 0.16), transparent 28rem),
+    linear-gradient(180deg, #ffffff 0%, #f7faf6 100%);
+}
+
+.portal-alert-grid,
+.portal-stats-grid,
+.citizen-service-grid,
+.umkm-card-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.portal-alert-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 1.25rem;
+}
+
+.portal-alert-card,
+.citizen-service-card,
+.umkm-card,
+.portal-stats-grid article {
+  background: #ffffff;
+  border: 1.5px solid rgba(11, 107, 58, 0.12);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-fast);
+}
+
+.portal-alert-card {
+  padding: 1.35rem;
+  border-left: 5px solid var(--gold);
+}
+
+.portal-alert-card small,
+.umkm-card span {
+  display: inline-flex;
+  color: var(--gold-dark);
+  background: var(--gold-light);
+  border-radius: var(--radius-pill);
+  padding: 0.22rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.portal-alert-card h3,
+.umkm-card h3 {
+  margin: 0.65rem 0 0.45rem;
+  font-size: 1.05rem;
+  color: var(--neutral-dark);
+}
+
+.portal-alert-card p,
+.citizen-service-card span,
+.umkm-card p,
+.umkm-card small {
+  color: var(--neutral-mid);
+  line-height: 1.55;
+}
+
+.portal-stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 1.5rem 0;
+}
+
+.portal-stats-grid article {
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.portal-stats-grid span {
+  color: var(--neutral-mid);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.portal-stats-grid strong {
+  display: block;
+  margin: 0.35rem 0;
+  color: var(--primary-dark);
+  font-size: clamp(1.35rem, 2vw, 2rem);
+}
+
+.portal-stats-grid small {
+  color: var(--gold-dark);
+  font-weight: 700;
+}
+
+.citizen-service-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.citizen-service-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1.2rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.citizen-service-card strong {
+  color: var(--primary-dark);
+  font-size: 1rem;
+}
+
+.portal-alert-card:hover,
+.citizen-service-card:hover,
+.umkm-card:hover,
+.portal-stats-grid article:hover {
+  transform: translateY(-3px);
+  border-color: rgba(216, 173, 69, 0.45);
+  box-shadow: var(--shadow-md);
+}
+
+.umkm-card-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.umkm-card {
+  padding: 1.4rem;
+}
+
+.umkm-card small {
+  display: block;
+  margin-top: 0.6rem;
+}
+
+.umkm-card a {
+  display: inline-flex;
+  margin-top: 1rem;
+  color: var(--primary);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.umkm-card a:hover {
+  color: var(--gold-dark);
+}
+
+@media (max-width: 900px) {
+  .portal-stats-grid,
+  .citizen-service-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .umkm-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .portal-alert-grid,
+  .portal-stats-grid,
+  .citizen-service-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Redesigned About Section Grid and Image Arch */
 .landing-intro {
   display: flex;
