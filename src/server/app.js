@@ -57,6 +57,9 @@ export async function buildServer(config = getServerConfig()) {
 
   app.setNotFoundHandler(async (request, reply) => {
     if (request.url.startsWith("/api/")) return reply.code(404).send({ error: "API tidak ditemukan" });
+    // Return 404 for missing static assets instead of SPA fallback
+    const staticExts = /\.(js|css|map|json|png|jpg|jpeg|webp|svg|gif|ico|woff2?|ttf|eot|mp3|mp4|pdf)$/i;
+    if (staticExts.test(request.url)) return reply.code(404).send({ error: "File tidak ditemukan" });
     return reply.sendFile("index.html");
   });
 
