@@ -608,7 +608,7 @@ window.filterGalleryList = function(val) {
 };
 
 // === Main Landing Page Renderer ===
-export function renderLandingPage() {
+function renderLandingPageLegacy() {
   const totalIncome = getPublicApprovedIncome();
   const totalTarget = 50000000;
   const totalPercentage = Math.min(100, Math.round((totalIncome / totalTarget) * 100));
@@ -1481,6 +1481,235 @@ export function renderLandingPage() {
 
   // Initialize IntersectionObserver scroll reveal animations
   initScrollReveal();
+}
+
+export function renderLandingPage() {
+  const totalIncome = getPublicApprovedIncome();
+  const activeDonors = appState.donors.filter((item) => item.active !== false).length;
+  const distributedFunds = appState.distributions
+    .filter((item) => item.status === "Disalurkan")
+    .reduce((sum, item) => sum + item.amount, 0);
+  const programs = [
+    ["Dakwah & Aswaja", "Pengajian, tahlil, kajian kitab, dan penguatan amaliyah warga."],
+    ["Koin NU", "Pengelolaan infaq warga yang dicatat, divalidasi, dan dilaporkan terbuka."],
+    ["Sosial Warga", "Santunan, bantuan dhuafa, kematian, pendidikan, dan kebutuhan darurat."],
+    ["Ekonomi Umat", "Pendataan dan promosi UMKM warga agar saling menguatkan."]
+  ];
+  const services = [
+    ["Layanan Kematian", "Info rumah duka dan koordinasi tahlil."],
+    ["Pengajuan Bantuan", "Warga dapat menyampaikan kebutuhan bantuan."],
+    ["Data Masjid/Mushola", "Pendataan tempat ibadah dan takmir."],
+    ["Kontak Pengurus", "Jalur cepat untuk kegiatan dan administrasi."]
+  ];
+  const umkm = (appState.portalUmkm?.length ? appState.portalUmkm : [
+    { businessName: "Warung Berkah Bu Aminah", category: "Kuliner", products: "Jajanan pasar dan nasi box", whatsapp: "6281270000101" },
+    { businessName: "Mitra Tani Kaliputra", category: "Pertanian", products: "Sayur, bibit, dan hasil kebun", whatsapp: "6281270000202" },
+    { businessName: "Konveksi Santri Mandiri", category: "Jasa", products: "Seragam banom dan bordir", whatsapp: "6281270000303" }
+  ]).slice(0, 3);
+  const news = getPublishedNews().slice(0, 3);
+
+  document.title = "PRNU Karangsalam Kidul II";
+  const metaDesc = document.querySelector('meta[name="description"]');
+  if (metaDesc) {
+    metaDesc.setAttribute("content", "Website resmi PRNU Karangsalam Kidul II: profil, layanan warga, Koin NU, berita, dan kontak pengurus.");
+  }
+
+  app.innerHTML = `
+    <div class="simple-landing">
+      <header class="simple-header">
+        <a class="simple-brand" href="#beranda" aria-label="PRNU Karangsalam Kidul II">
+          <img src="/logo-karangsalam-2.png" alt="Logo Karangsalam 2" />
+          <span><strong>PRNU Karangsalam Kidul II</strong><small>Merawat tradisi, menguatkan khidmah</small></span>
+        </a>
+        <button class="simple-menu" id="landingMenuButton" type="button" aria-expanded="false" aria-controls="landingNav">Menu</button>
+        <nav class="simple-nav" id="landingNav">
+          <a href="#profil">Profil</a>
+          <a href="#layanan">Layanan</a>
+          <a href="#program">Program</a>
+          <a href="#berita">Berita</a>
+          <a href="#kontak">Kontak</a>
+          <a class="simple-nav-admin" href="/admin">Admin</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="simple-hero" id="beranda">
+          <div class="simple-hero-copy">
+            <p class="simple-kicker">Pengurus Ranting Nahdlatul Ulama</p>
+            <h1>Website warga yang ringkas, jelas, dan dekat dengan kebutuhan jamaah.</h1>
+            <p>PRNU Karangsalam Kidul II menghadirkan informasi kegiatan, layanan warga, Koin NU, dan kontak pengurus dalam satu halaman yang mudah dibaca.</p>
+            <div class="simple-actions">
+              <a class="simple-button primary" href="#layanan">Lihat Layanan</a>
+              <a class="simple-button" href="/transparansi">Transparansi Koin NU</a>
+            </div>
+          </div>
+          <aside class="simple-hero-card">
+            <img src="/logo-karangsalam-2.png" alt="Logo Karangsalam 2" />
+            <strong>Karangsalam 2</strong>
+            <span>Aswaja An-Nahdliyah, sosial warga, dan digitalisasi khidmah ranting.</span>
+          </aside>
+        </section>
+
+        <section class="simple-section simple-stats" aria-label="Ringkasan Koin NU">
+          <article><span>Donatur aktif</span><strong>${activeDonors.toLocaleString("id-ID")}</strong></article>
+          <article><span>Koin tervalidasi bulan ini</span><strong>${formatCompactRupiah(totalIncome)}</strong></article>
+          <article><span>Dana tersalur</span><strong>${formatCompactRupiah(distributedFunds)}</strong></article>
+        </section>
+
+        <section class="simple-section simple-about" id="profil">
+          <div>
+            <p class="simple-kicker">Tentang Kami</p>
+            <h2>Khidmah ranting yang mudah dipahami warga.</h2>
+          </div>
+          <p>Website ini dibuat sebagai papan informasi resmi: tidak perlu berputar-putar, warga langsung menemukan profil, layanan, program, berita penting, dan cara menghubungi pengurus.</p>
+        </section>
+
+        <section class="simple-section" id="layanan">
+          <div class="simple-heading">
+            <p class="simple-kicker">Layanan Warga</p>
+            <h2>Yang paling sering dibutuhkan warga.</h2>
+          </div>
+          <div class="simple-card-grid">
+            ${services.map(([title, copy]) => `
+              <article class="simple-card">
+                <h3>${escapeHtml(title)}</h3>
+                <p>${escapeHtml(copy)}</p>
+              </article>
+            `).join("")}
+          </div>
+        </section>
+
+        <section class="simple-section" id="program">
+          <div class="simple-heading">
+            <p class="simple-kicker">Program Utama</p>
+            <h2>Empat arah kerja yang diprioritaskan.</h2>
+          </div>
+          <div class="simple-card-grid">
+            ${programs.map(([title, copy]) => `
+              <article class="simple-card">
+                <h3>${escapeHtml(title)}</h3>
+                <p>${escapeHtml(copy)}</p>
+              </article>
+            `).join("")}
+          </div>
+        </section>
+
+        <section class="simple-section simple-split" id="umkm">
+          <div>
+            <p class="simple-kicker">UMKM Warga</p>
+            <h2>Usaha warga ditampilkan secukupnya, tidak memenuhi halaman.</h2>
+            <p>Direktori UMKM membantu warga saling mengenal produk dan jasa sekitar. Data lengkap dapat dikelola dari admin.</p>
+          </div>
+          <div class="simple-list">
+            ${umkm.map((item) => `
+              <article>
+                <strong>${escapeHtml(item.businessName || item.name || "UMKM Warga")}</strong>
+                <span>${escapeHtml(item.category || "Usaha Warga")} - ${escapeHtml(item.products || item.product || "")}</span>
+                ${item.whatsapp ? `<a href="https://wa.me/${escapeHtml(item.whatsapp)}" target="_blank" rel="noreferrer">Hubungi</a>` : ""}
+              </article>
+            `).join("")}
+          </div>
+        </section>
+
+        <section class="simple-section" id="berita">
+          <div class="simple-heading">
+            <p class="simple-kicker">Berita</p>
+            <h2>Kabar terbaru seperlunya.</h2>
+          </div>
+          <div class="simple-news-grid">
+            ${news.length ? news.map((item) => `
+              <article class="simple-news-card" data-id="${escapeHtml(item.id)}">
+                <img src="${escapeHtml(item.imageUrl || "/logo-karangsalam-2.png")}" alt="${escapeHtml(item.title)}" loading="lazy" />
+                <div>
+                  <small>${escapeHtml(item.category)} - ${formatDateId(item.date)}</small>
+                  <h3>${escapeHtml(item.title)}</h3>
+                  <p>${escapeHtml(item.excerpt || "")}</p>
+                </div>
+              </article>
+            `).join("") : `<div class="simple-empty">Belum ada berita terbaru.</div>`}
+          </div>
+        </section>
+
+        <section class="simple-section simple-donation" id="donasi">
+          <div>
+            <p class="simple-kicker">Koin NU & Donasi</p>
+            <h2>Bantu khidmah NU berjalan lebih kuat.</h2>
+            <p>Setiap donasi dicatat dalam sistem dan diringkas pada halaman transparansi.</p>
+          </div>
+          <div class="simple-actions">
+            <a class="simple-button primary" href="/transparansi">Lihat Transparansi</a>
+            <button class="simple-button" id="copyDonationButton" type="button">Donasi Sekarang</button>
+          </div>
+        </section>
+
+        <section class="simple-section simple-contact" id="kontak">
+          <div>
+            <p class="simple-kicker">Kontak</p>
+            <h2>Hubungi pengurus.</h2>
+            <p>Untuk kegiatan, layanan warga, Koin NU, donatur baru, atau informasi administrasi ranting.</p>
+          </div>
+          <div class="simple-contact-card">
+            <strong>PRNU Karangsalam Kidul II</strong>
+            <span>Gg. Melati RT 02 / RW 03, Kedungbanteng, Banyumas</span>
+            <a href="https://wa.me/6281270000101" target="_blank" rel="noreferrer">WhatsApp Pengurus</a>
+            <a href="mailto:admin@rantingnu.id">admin@rantingnu.id</a>
+          </div>
+        </section>
+      </main>
+
+      <footer class="simple-footer">
+        <span>PRNU Karangsalam Kidul II</span>
+        <span>SIKOINNU 2026</span>
+      </footer>
+
+      <dialog id="donation-dialog" class="donation-dialog">
+        <div class="donation-dialog-content" id="donation-dialog-content-wrapper"></div>
+      </dialog>
+      <dialog id="news-reader-dialog" class="news-dialog">
+        <div class="news-dialog-content">
+          <button class="dialog-close-btn" id="close-news-dialog" aria-label="Tutup">&times;</button>
+          <div id="news-dialog-body"></div>
+        </div>
+      </dialog>
+    </div>
+  `;
+
+  document.querySelector("#landingMenuButton")?.addEventListener("click", (event) => {
+    const expanded = event.currentTarget.getAttribute("aria-expanded") === "true";
+    event.currentTarget.setAttribute("aria-expanded", String(!expanded));
+    document.querySelector("#landingNav")?.classList.toggle("open", !expanded);
+  });
+  document.querySelectorAll(".simple-nav a").forEach((link) => link.addEventListener("click", () => {
+    document.querySelector("#landingMenuButton")?.setAttribute("aria-expanded", "false");
+    document.querySelector("#landingNav")?.classList.remove("open");
+  }));
+
+  const donationDialog = document.querySelector("#donation-dialog");
+  document.querySelector("#copyDonationButton")?.addEventListener("click", () => {
+    initDonationDialogFlow();
+    donationDialog?.showModal();
+  });
+
+  const newsDialog = document.querySelector("#news-reader-dialog");
+  document.querySelectorAll(".simple-news-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const item = appState.news.find((newsItem) => String(newsItem.id) === String(card.dataset.id));
+      const body = document.querySelector("#news-dialog-body");
+      if (!item || !body) return;
+      body.innerHTML = `
+        <div class="news-dialog-header" style="text-align:center;margin-bottom:1.25rem;">
+          <small style="color:var(--gold-dark);font-weight:800;text-transform:uppercase;">${escapeHtml(item.category)} - ${formatDateId(item.date)}</small>
+          <h2 style="font-family:var(--font-serif);font-size:1.8rem;line-height:1.25;margin:0.5rem 0 0;">${escapeHtml(item.title)}</h2>
+        </div>
+        <img src="${escapeHtml(item.imageUrl || "/logo-karangsalam-2.png")}" alt="${escapeHtml(item.title)}" style="width:100%;height:260px;object-fit:cover;border-radius:var(--radius-md);margin-bottom:1.25rem;" />
+        <div style="font-size:0.95rem;line-height:1.75;color:var(--neutral-mid);">
+          ${String(item.content || item.excerpt || "").split("\n").filter(Boolean).map((paragraph) => `<p style="margin-bottom:1rem;">${escapeHtml(paragraph)}</p>`).join("")}
+        </div>
+      `;
+      newsDialog?.showModal();
+    });
+  });
+  document.querySelector("#close-news-dialog")?.addEventListener("click", () => newsDialog?.close());
 }
 
 // === Interactive QRIS Donation Simulator & Digital Receipt Helpers ===
