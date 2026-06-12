@@ -535,10 +535,10 @@ export const appState = {
   settingsEditMode: false,
   passwordEditMode: false,
   users: [
-    { id: "demo-admin", email: "admin@rantingnu.id", fullName: "Admin Ranting", role: "admin", phone: "0812-9000-1111", status: "aktif", createdAt: "2026-05-01T08:00:00.000Z" },
-    { id: "demo-bendahara", email: "bendahara@rantingnu.id", fullName: "Hj. Lailatul Badriyah", role: "bendahara", phone: "0881-8100-0505", status: "aktif", createdAt: "2026-05-01T08:10:00.000Z" },
-    { id: "demo-petugas", email: "petugas@rantingnu.id", fullName: "Ahmad Fauzi", role: "petugas", phone: "0812-7000-0101", status: "aktif", createdAt: "2026-05-01T08:20:00.000Z" },
-    { id: "demo-pengurus", email: "pengurus@rantingnu.id", fullName: "KH. Muhammad Sholeh", role: "pengurus", phone: "0812-8100-0101", status: "aktif", createdAt: "2026-05-01T08:30:00.000Z" }
+    { id: "demo-admin", username: "admin", email: "admin@rantingnu.id", fullName: "Admin Ranting", role: "admin", phone: "0812-9000-1111", status: "aktif", createdAt: "2026-05-01T08:00:00.000Z" },
+    { id: "demo-bendahara", username: "bendahara", email: "bendahara@rantingnu.id", fullName: "Hj. Lailatul Badriyah", role: "bendahara", phone: "0881-8100-0505", status: "aktif", createdAt: "2026-05-01T08:10:00.000Z" },
+    { id: "demo-petugas", username: "petugas", email: "petugas@rantingnu.id", fullName: "Ahmad Fauzi", role: "petugas", phone: "0812-7000-0101", status: "aktif", createdAt: "2026-05-01T08:20:00.000Z" },
+    { id: "demo-pengurus", username: "pengurus", email: "pengurus@rantingnu.id", fullName: "KH. Muhammad Sholeh", role: "pengurus", phone: "0812-8100-0101", status: "aktif", createdAt: "2026-05-01T08:30:00.000Z" }
   ],
   userSearch: "",
   userRole: "all",
@@ -898,6 +898,7 @@ export function mapDbToAppState(data) {
 
   appState.users = (data.profiles || []).map((item) => ({
     id: item.id,
+    username: item.username || item.user_name || item.login || item.id,
     email: item.email,
     fullName: item.full_name,
     role: item.role,
@@ -1321,6 +1322,7 @@ export function toDbRows(table) {
   if (table === "profiles") {
     return appState.users.map((item) => ({
       id: item.id,
+      username: item.username || item.id,
       email: item.email,
       full_name: item.fullName,
       role: item.role,

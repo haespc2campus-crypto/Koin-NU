@@ -7,9 +7,11 @@ const record = z.record(z.string(), z.unknown());
 
 export const schemas = {
   login: z.object({
-    email: z.string().trim().toLowerCase().email(),
+    login: z.string().trim().toLowerCase().min(1).optional(),
+    username: z.string().trim().toLowerCase().min(1).optional(),
+    email: z.string().trim().toLowerCase().min(1).optional(),
     password: z.string().min(1)
-  }),
+  }).refine((value) => value.login || value.username || value.email, { message: "Akun wajib diisi." }),
   changePassword: z.object({
     currentPassword: z.string().min(1),
     newPassword: z.string().min(8)

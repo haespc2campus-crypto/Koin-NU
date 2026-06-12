@@ -3872,7 +3872,8 @@ export async function handleChangePasswordSubmit(event) {
 // === 11. USER MANAGEMENT ===
 export function getVisibleUsers() {
   return appState.users.filter((user) => {
-    const matchesSearch = user.fullName.toLowerCase().includes(appState.userSearch.toLowerCase()) || user.email.toLowerCase().includes(appState.userSearch.toLowerCase());
+    const search = appState.userSearch.toLowerCase();
+    const matchesSearch = user.fullName.toLowerCase().includes(search) || String(user.username || "").toLowerCase().includes(search) || user.email.toLowerCase().includes(search);
     const matchesRole = appState.userRole === "all" || user.role === appState.userRole;
     const matchesStatus = appState.userStatus === "all" || user.status === appState.userStatus;
     return matchesSearch && matchesRole && matchesStatus;
@@ -3905,7 +3906,7 @@ export function renderUsers() {
       <div class="officer-toolbar">
         <label class="search-field">
           <span>Cari user</span>
-          <input id="userSearch" type="search" value="${escapeHtml(appState.userSearch)}" placeholder="Cari nama atau email" />
+          <input id="userSearch" type="search" value="${escapeHtml(appState.userSearch)}" placeholder="Cari nama, username, atau email" />
         </label>
         <label>
           <span>Role</span>
@@ -3935,11 +3936,12 @@ export function renderUserTable(users) {
   return `
     <div class="table-wrap officer-table">
       <table>
-        <thead><tr><th>Nama</th><th>Email</th><th>HP</th><th>Role</th><th>Status</th><th>Dibuat</th><th>Aksi</th></tr></thead>
+        <thead><tr><th>Nama</th><th>Username</th><th>Email</th><th>HP</th><th>Role</th><th>Status</th><th>Dibuat</th><th>Aksi</th></tr></thead>
         <tbody>
           ${users.map((user) => `
             <tr>
               <td><strong>${escapeHtml(user.fullName)}</strong></td>
+              <td>${escapeHtml(user.username || user.id)}</td>
               <td>${escapeHtml(user.email)}</td>
               <td>${escapeHtml(user.phone || "-")}</td>
               <td>${labelRole(user.role)}</td>
@@ -3950,14 +3952,14 @@ export function renderUserTable(users) {
                 <button class="ghost-button small" data-user-action="reset" data-id="${user.id}" type="button">Reset</button>
               </td>
             </tr>
-          `).join("") || `<tr><td colspan="7">Belum ada user sesuai filter.</td></tr>`}
+          `).join("") || `<tr><td colspan="8">Belum ada user sesuai filter.</td></tr>`}
         </tbody>
       </table>
     </div>
     <div class="officer-card-list">
       ${users.map((user) => `
         <article class="officer-card">
-          <div><strong>${escapeHtml(user.fullName)}</strong><span>${escapeHtml(user.email)}</span></div>
+          <div><strong>${escapeHtml(user.fullName)}</strong><span>${escapeHtml(user.username || user.id)} - ${escapeHtml(user.email)}</span></div>
           <p>${escapeHtml(user.phone || "-")} - ${labelRole(user.role)}</p>
           <div class="card-meta"><span>${user.status === "aktif" ? "Aktif" : "Tidak aktif"}</span><span>${formatDateId(String(user.createdAt || "").slice(0, 10))}</span></div>
           <div class="card-actions">
@@ -3974,7 +3976,7 @@ export function renderUserModal() {
   const mode = appState.userModalMode;
   if (!mode) return "";
   const user = appState.users.find((item) => item.id === appState.selectedUserId);
-  const values = user || { id: "", fullName: "", email: "", phone: "", role: "petugas", status: "aktif" };
+  const values = user || { id: "", username: "", fullName: "", email: "", phone: "", role: "petugas", status: "aktif" };
   const title = mode === "add" ? "Tambah User" : "Edit User";
   return `
     <div class="modal-backdrop">
@@ -3992,8 +3994,9 @@ export function renderUserModal() {
             <span>User ID</span>
             <input name="id" value="${escapeHtml(values.id)}" ${mode === "edit" ? "readonly" : ""} placeholder="UUID user dari database internal" required />
           </label>
+          <label class="field"><span>Username Login</span><input name="username" value="${escapeHtml(values.username || values.id)}" placeholder="admin" required /></label>
           <label class="field"><span>Nama lengkap</span><input name="fullName" value="${escapeHtml(values.fullName)}" required /></label>
-          <label class="field"><span>Email</span><input name="email" type="email" value="${escapeHtml(values.email)}" required /></label>
+          <label class="field"><span>Email Kontak</span><input name="email" type="email" value="${escapeHtml(values.email)}" /></label>
           <label class="field"><span>Nomor HP</span><input name="phone" value="${escapeHtml(values.phone || "")}" /></label>
           <label class="field"><span>Role</span><select name="role">${roles.map((role) => `<option value="${role}" ${values.role === role ? "selected" : ""}>${labelRole(role)}</option>`).join("")}</select></label>
           <label class="field"><span>Status</span><select name="status"><option value="aktif" ${values.status === "aktif" ? "selected" : ""}>Aktif</option><option value="tidak_aktif" ${values.status === "tidak_aktif" ? "selected" : ""}>Tidak aktif</option></select></label>
@@ -4055,6 +4058,7 @@ export function handleUserSubmit(event) {
   const data = new FormData(event.currentTarget);
   const payload = {
     id: String(data.get("id") || "").trim(),
+    username: String(data.get("username") || "").trim().toLowerCase(),
     fullName: String(data.get("fullName") || "").trim(),
     email: String(data.get("email") || "").trim(),
     phone: String(data.get("phone") || "").trim(),
@@ -4063,14 +4067,20 @@ export function handleUserSubmit(event) {
     createdAt: new Date().toISOString()
   };
 
-  if (!payload.id || !payload.fullName || !payload.email) {
-    document.querySelector("#userFormError").textContent = "User ID, nama, dan email wajib diisi.";
+  if (!payload.id || !payload.username || !payload.fullName) {
+    document.querySelector("#userFormError").textContent = "User ID, username, dan nama wajib diisi.";
     return;
   }
 
-  const duplicate = appState.users.some((user) => user.id !== appState.selectedUserId && (user.id === payload.id || user.email === payload.email));
+  const duplicate = appState.users.some((user) => {
+    if (user.id === appState.selectedUserId) return false;
+    const sameId = user.id === payload.id;
+    const sameUsername = String(user.username || "").toLowerCase() === payload.username;
+    const sameEmail = payload.email && user.email === payload.email;
+    return sameId || sameUsername || sameEmail;
+  });
   if (duplicate) {
-    document.querySelector("#userFormError").textContent = "User ID atau email sudah dipakai.";
+    document.querySelector("#userFormError").textContent = "User ID, username, atau email sudah dipakai.";
     return;
   }
 
@@ -4557,5 +4567,3 @@ export async function handleMosqueSubmit(event) {
   appState.mosqueModalOpen = false;
   renderCitizenServicesAdmin();
 }
-
-

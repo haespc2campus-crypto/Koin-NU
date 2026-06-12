@@ -25,14 +25,14 @@ export const publicPortalTables = [
   "dokumen_publik"
 ];
 
-function makeDefaultUser(id, email, password, fullName, role, phone) {
-  return { id, email, password_hash: hashPasswordLegacy(password), full_name: fullName, role, phone, status: "aktif", created_at: new Date().toISOString() };
+function makeDefaultUser(id, email, password, fullName, role, phone, username = id) {
+  return { id, username, email, password_hash: hashPasswordLegacy(password), full_name: fullName, role, phone, status: "aktif", created_at: new Date().toISOString() };
 }
 const defaultUsers = [
-  makeDefaultUser("demo-admin", "admin@rantingnu.id", "admin123", "Admin Ranting", "admin", "0812-9000-1111"),
-  makeDefaultUser("demo-bendahara", "bendahara@rantingnu.id", "bendahara123", "Bendahara", "bendahara", ""),
-  makeDefaultUser("demo-petugas", "petugas@rantingnu.id", "petugas123", "Petugas", "petugas", "0812-7000-0101"),
-  makeDefaultUser("demo-pengurus", "pengurus@rantingnu.id", "pengurus123", "Pengurus", "pengurus", "")
+  makeDefaultUser("demo-admin", "admin@rantingnu.id", "admin123", "Admin Ranting", "admin", "0812-9000-1111", "admin"),
+  makeDefaultUser("demo-bendahara", "bendahara@rantingnu.id", "bendahara123", "Bendahara", "bendahara", "", "bendahara"),
+  makeDefaultUser("demo-petugas", "petugas@rantingnu.id", "petugas123", "Petugas", "petugas", "0812-7000-0101", "petugas"),
+  makeDefaultUser("demo-pengurus", "pengurus@rantingnu.id", "pengurus123", "Pengurus", "pengurus", "", "pengurus")
 ];
 
 export function createApiContext(config) {
@@ -128,7 +128,7 @@ export function createApiContext(config) {
   function cleanText(value, max = 500) { return String(value ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "").slice(0, max); }
   function cleanNumber(value, min = 0) { const number = Number(value || 0); if (!Number.isFinite(number) || number < min) throw new Error("Nominal tidak valid."); return number; }
   function cleanDate(value) { const text = cleanText(value, 20); if (text && !/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new Error("Tanggal tidak valid."); return text; }
-  async function normalizeProfile(row, existing = {}) { const next = { ...existing, ...row }; delete next.password; if (row.password && String(row.password).length >= 8) next.password_hash = await hashPasswordModern(row.password); if (!next.password_hash && !existing.password_hash) next.password_hash = await hashPasswordModern("changeme123"); next.email = String(next.email || "").trim().toLowerCase(); next.full_name = String(next.full_name || next.fullName || next.email || "User").trim(); next.role = roles.includes(next.role) ? next.role : "petugas"; next.status = statuses.includes(next.status) ? next.status : "aktif"; next.created_at = next.created_at || new Date().toISOString(); return next; }
+  async function normalizeProfile(row, existing = {}) { const next = { ...existing, ...row }; delete next.password; if (row.password && String(row.password).length >= 8) next.password_hash = await hashPasswordModern(row.password); if (!next.password_hash && !existing.password_hash) next.password_hash = await hashPasswordModern("changeme123"); next.username = cleanText(next.username || next.user_name || next.login || next.id, 80).toLowerCase(); next.email = String(next.email || "").trim().toLowerCase(); next.full_name = String(next.full_name || next.fullName || next.username || next.email || "User").trim(); next.role = roles.includes(next.role) ? next.role : "petugas"; next.status = statuses.includes(next.status) ? next.status : "aktif"; next.created_at = next.created_at || new Date().toISOString(); return next; }
   async function sanitizeRow(table, row, existing = {}) { if (!row || typeof row !== "object" || Array.isArray(row)) throw new Error("Data tidak valid."); if (table === "profiles") return normalizeProfile(row, existing); const next = { ...existing, ...row }; if (["pengambilan_koin", "setoran_petugas", "setoran_lazisnu", "penyaluran_dana"].includes(table)) next.nominal = cleanNumber(next.nominal ?? next.amount ?? 0); if (table === "pengambilan_koin") { if (!next.donatur_id || !next.petugas_id) throw new Error("Donatur dan petugas wajib diisi."); next.tanggal = cleanDate(next.tanggal); next.metode_pembayaran = cleanText(next.metode_pembayaran || "Tunai", 40); next.status_verifikasi = cleanText(next.status_verifikasi || "Menunggu Verifikasi", 40); next.catatan_petugas = cleanText(next.catatan_petugas, 1000); } if (table === "donatur") { next.nama_kk = cleanText(next.nama_kk, 160); if (!next.nama_kk) throw new Error("Nama donatur wajib diisi."); next.phone = cleanText(next.phone, 40); next.alamat = cleanText(next.alamat, 500); next.status = statuses.includes(next.status) ? next.status : "aktif"; } if (["berita", "artikel"].includes(table)) { next.judul = cleanText(next.judul, 180); next.slug = cleanText(next.slug || next.judul.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""), 180); next.ringkasan = cleanText(next.ringkasan || next.excerpt, 500); next.konten = cleanText(next.konten, 12000); next.status = ["published", "draft"].includes(next.status) ? next.status : "draft"; if (!next.judul || !next.ringkasan || !next.konten) throw new Error("Berita wajib lengkap."); } if (["pengumuman", "kegiatan", "umkm", "download", "program_kerja", "lpj_kegiatan", "dokumen_publik"].includes(table)) { next.status = ["published", "draft", "aktif", "nonaktif"].includes(next.status) ? next.status : "draft"; if (next.slug) next.slug = cleanText(next.slug, 180); } if (table === "kontak_masuk") next.status = cleanText(next.status || "baru", 40); next.updated_at = new Date().toISOString(); return next; }
   function isAdminRole(role) { return role === "super_admin" || role === "admin"; }
   function canRead(user, table) { if (publicPortalTables.includes(table)) return true; return Boolean(user); }

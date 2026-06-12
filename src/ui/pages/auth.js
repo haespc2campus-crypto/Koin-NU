@@ -36,7 +36,7 @@ export function renderLogin(options = {}) {
   const adminOnly = Boolean(options.adminOnly);
   const saved = getSession();
   if (saved?.role) {
-    navigate(saved.role === "admin" || !adminOnly ? "/dashboard" : "/login");
+    navigate(["super_admin", "admin"].includes(saved.role) || !adminOnly ? "/dashboard" : "/login");
     return;
   }
 
@@ -48,13 +48,13 @@ export function renderLogin(options = {}) {
         <p class="eyebrow">${adminOnly ? "akses admin" : postgresMode ? "database internal" : "Mode Demo"}</p>
         <h2>${adminOnly ? "Login Admin" : `Masuk ${brand.name}`}</h2>
         <strong class="login-subtitle">${brand.subtitle}</strong>
-        <p>${adminOnly ? "Halaman ini khusus administrator website dan sistem SIKOINNU." : postgresMode ? "Gunakan akun database internal." : "Database internal aktif."}</p>
+        <p>${adminOnly ? "Halaman ini khusus administrator website dan sistem SIKOINNU." : postgresMode ? "Gunakan username akun internal." : "Database internal aktif."}</p>
       </div>
 
       <label class="field">
-        <span>Email</span>
-        <input id="email" type="email" autocomplete="email" placeholder="nama@rantingnu.id" />
-        <small class="error" id="emailError"></small>
+        <span>Akun / Username</span>
+        <input id="loginAccount" type="text" autocomplete="username" placeholder="admin atau superadmin" />
+        <small class="error" id="loginAccountError"></small>
       </label>
 
       <label class="field">
@@ -95,22 +95,22 @@ async function handleLogin(event, options = {}) {
   event.preventDefault();
   const adminOnly = Boolean(options.adminOnly);
 
-  const email = document.querySelector("#email");
+  const loginAccount = document.querySelector("#loginAccount");
   const password = document.querySelector("#password");
   const role = document.querySelector("input[name='role']:checked");
   const postgresMode = true;
   const errors = {
-    email: email.value.trim() ? "" : "Email wajib diisi.",
+    loginAccount: loginAccount.value.trim() ? "" : "Akun wajib diisi.",
     password: password.value.trim() ? "" : "Password wajib diisi.",
     role: postgresMode || role ? "" : "Pilih role terlebih dahulu."
   };
 
-  document.querySelector("#emailError").textContent = errors.email;
+  document.querySelector("#loginAccountError").textContent = errors.loginAccount;
   document.querySelector("#passwordError").textContent = errors.password;
   document.querySelector("#roleError").textContent = errors.role;
   document.querySelector("#formSuccess").textContent = "";
 
-  if (errors.email || errors.password || errors.role) {
+  if (errors.loginAccount || errors.password || errors.role) {
     document.querySelector("#formError").textContent = "Lengkapi data masuk terlebih dahulu.";
     return;
   }
@@ -122,7 +122,7 @@ async function handleLogin(event, options = {}) {
 
   try {
     if (postgresMode) {
-      const auth = await internalRequest("login", { method: "POST", body: JSON.stringify({ email: email.value.trim(), password: password.value }) });
+      const auth = await internalRequest("login", { method: "POST", body: JSON.stringify({ login: loginAccount.value.trim(), password: password.value }) });
       if (adminOnly && !["super_admin", "admin"].includes(auth.user?.role)) {
         throw new Error("ADMIN_ONLY");
       }
@@ -132,7 +132,7 @@ async function handleLogin(event, options = {}) {
     } else {
       setSession({
         id: `demo-${role.value}`,
-        email: email.value.trim(),
+        email: loginAccount.value.trim(),
         name: labelRole(role.value),
         role: role.value,
         authProvider: "demo",
@@ -156,7 +156,7 @@ function parseAuthError(error, options = {}) {
     return "Halaman ini khusus admin. Gunakan akun administrator.";
   }
   if (message.includes("Invalid login credentials")) {
-    return "Email atau password tidak sesuai.";
+    return "Akun atau password tidak sesuai.";
   }
   if (message.includes("Email not confirmed")) {
     return "Email belum dikonfirmasi.";
@@ -164,18 +164,18 @@ function parseAuthError(error, options = {}) {
   if (message.includes("profil belum dibuat") || message.includes("Akun belum aktif")) {
     return "Akun sudah ada, tetapi profil aplikasi belum aktif. Hubungi admin.";
   }
-  return "Login belum berhasil. Periksa email, password, atau koneksi server.";
+  return "Login belum berhasil. Periksa akun, password, atau koneksi server.";
 }
 
 async function handleForgotPassword() {
-  const email = document.querySelector("#email").value.trim();
+  const email = document.querySelector("#loginAccount").value.trim();
   const error = document.querySelector("#formError");
   const success = document.querySelector("#formSuccess");
   error.textContent = "";
   success.textContent = "";
 
   if (!email) {
-    error.textContent = "Isi email terlebih dahulu untuk reset password.";
+    error.textContent = "Isi akun atau email terlebih dahulu untuk reset password.";
     return;
   }
 

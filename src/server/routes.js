@@ -240,11 +240,16 @@ export async function registerApiRoutes(app, context) {
 
   app.post("/api/login", async (request, reply) => {
     const db = await context.readDb();
-    const { email, password } = parse(schemas.login, request.body);
-    if (!context.checkLoginRate(request, email)) return send(reply, 429, { error: "Terlalu banyak percobaan login. Coba lagi nanti." });
-    const user = db.profiles.find((u) => u.email === email && u.status !== "tidak_aktif");
-    if (!user || !(await verifyPassword(password, user.password_hash))) { context.recordLoginAttempt(request, email, false); return send(reply, 401, { error: "Email atau password tidak sesuai." }); }
-    context.recordLoginAttempt(request, email, true);
+    const { login, username, email, password } = parse(schemas.login, request.body);
+    const account = String(login || username || email || "").trim().toLowerCase();
+    if (!context.checkLoginRate(request, account)) return send(reply, 429, { error: "Terlalu banyak percobaan login. Coba lagi nanti." });
+    const user = db.profiles.find((u) => {
+      const userName = String(u.username || u.user_name || u.login || u.id || "").trim().toLowerCase();
+      const userEmail = String(u.email || "").trim().toLowerCase();
+      return u.status !== "tidak_aktif" && (userName === account || userEmail === account);
+    });
+    if (!user || !(await verifyPassword(password, user.password_hash))) { context.recordLoginAttempt(request, account, false); return send(reply, 401, { error: "Akun atau password tidak sesuai." }); }
+    context.recordLoginAttempt(request, account, true);
     const responseUser = isLegacyPasswordHash(user.password_hash) ? await context.upgradeProfilePassword(db, user.id, password) : context.publicUser(user);
     const expiresAt = Date.now() + context.sessionTtlMs;
     const token = context.createSessionToken({ userId: user.id, expiresAt });
