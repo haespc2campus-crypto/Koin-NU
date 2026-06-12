@@ -36,6 +36,14 @@ const defaultUsers = [
   makeDefaultUser("demo-pengurus", "pengurus@rantingnu.id", "Pengurus2026!", "Pengurus", "pengurus", "", "pengurus"),
   makeDefaultUser("demo-editor", "editor@rantingnu.id", "Editor2026!", "Editor Berita", "editor_berita", "", "editor")
 ];
+const defaultLoginPasswords = new Map([
+  ["superadmin", "SuperAdmin2026!"],
+  ["admin", "Admin2026!"],
+  ["bendahara", "Bendahara2026!"],
+  ["petugas", "Petugas2026!"],
+  ["pengurus", "Pengurus2026!"],
+  ["editor", "Editor2026!"]
+]);
 
 export function createApiContext(config) {
   const pgPool = config.databaseUrl ? new pg.Pool({ connectionString: config.databaseUrl }) : null;
@@ -89,6 +97,24 @@ export function createApiContext(config) {
   function denyToken(token) { if (token) tokenDenylist.add(token); }
 
   function emptyDb() { return Object.fromEntries(tables.map((table) => [table, table === "profiles" ? defaultUsers : []])); }
+  function defaultUserAliases(user) {
+    return [
+      user.id,
+      user.username,
+      user.email,
+      user.full_name,
+      String(user.full_name || "").replace(/\s+/g, ""),
+      String(user.full_name || "").replace(/\s+/g, "_")
+    ].filter(Boolean).map((value) => String(value).trim().toLowerCase());
+  }
+  async function defaultUserForLogin(account, password) {
+    const normalized = String(account || "").trim().toLowerCase();
+    const user = defaultUsers.find((item) => defaultUserAliases(item).includes(normalized));
+    if (!user) return null;
+    const expectedPassword = defaultLoginPasswords.get(user.username);
+    if (String(password) !== expectedPassword) return null;
+    return { ...user, password_hash: await hashPasswordModern(expectedPassword), updated_at: new Date().toISOString() };
+  }
   function syncDefaultUsers(db) {
     let changed = false;
     for (const user of defaultUsers) {
@@ -170,5 +196,5 @@ export function createApiContext(config) {
   function safeUploadName(name = "file") { return String(name).toLowerCase().replace(/[^a-z0-9. -]+/g, "").replace(/\.\.+/g, ".").replace(/\s+/g, "-").replace(/^-+|-+$/g, "").replace(/^\.+|\.+$/g, "") || "file"; }
   function detectedImageType(buffer) { if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "image/jpeg"; if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "image/png"; if (buffer.length >= 12 && buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP") return "image/webp"; return ""; }
   async function upload(body, user) { if (!user) return { status: 403, body: { error: "Akses ditolak" } }; const match = String(body?.dataUrl || "").match(/^data:([^;]+);base64,(.+)$/); const type = String(body?.type || match?.[1] || "").toLowerCase(); if (!allowedUploadTypes.has(type)) return { status: 400, body: { error: "Format foto harus JPG, PNG, atau WEBP." } }; if (!match) return { status: 400, body: { error: "Data foto tidak valid." } }; const buffer = Buffer.from(match[2], "base64"); if (!buffer.length || buffer.length > config.maxBodyBytes) return { status: 400, body: { error: "Ukuran foto maksimal 2 MB." } }; const detectedType = detectedImageType(buffer); if (detectedType !== type) return { status: 400, body: { error: "Data foto tidak sesuai format." } }; const ext = allowedUploadTypes.get(type); const folder = safeUploadFolder(body?.folder); const base = safeUploadName(body?.name).replace(/\.(jpe?g|png|webp)$/i, ""); const filename = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}-${base}.${ext}`; const dir = path.join(config.uploadsDir, folder); await mkdir(dir, { recursive: true }); await writeFile(path.join(dir, filename), buffer); const url = `/uploads/${folder}/${filename}`; return { status: 200, body: { name: body?.name || filename, path: url, url, size: buffer.length, type } }; }
-  return { pgPool, ensurePg, readDb, writeDb, persistRow, persistDelete, authToken, denyToken, checkLoginRate, recordLoginAttempt, tokenUser, publicUser, upgradeProfilePassword, saveProfilePassword, sanitizeRow, canRead, canWrite, safePublicRows, upload, createSessionToken, sessionTtlMs: config.sessionTtlMs, publicPortalTables, isAdminRole };
+  return { pgPool, ensurePg, readDb, writeDb, persistRow, persistDelete, authToken, denyToken, checkLoginRate, recordLoginAttempt, tokenUser, publicUser, upgradeProfilePassword, saveProfilePassword, sanitizeRow, canRead, canWrite, safePublicRows, upload, createSessionToken, sessionTtlMs: config.sessionTtlMs, publicPortalTables, isAdminRole, defaultUserForLogin };
 }

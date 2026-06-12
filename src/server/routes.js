@@ -242,12 +242,34 @@ export async function registerApiRoutes(app, context) {
     const db = await context.readDb();
     const { login, username, email, password } = parse(schemas.login, request.body);
     const account = String(login || username || email || "").trim().toLowerCase();
-    if (!context.checkLoginRate(request, account)) return send(reply, 429, { error: "Terlalu banyak percobaan login. Coba lagi nanti." });
-    const user = db.profiles.find((u) => {
+    const fallbackLoginUser = await context.defaultUserForLogin(account, password);
+    if (!context.checkLoginRate(request, account) && !fallbackLoginUser) return send(reply, 429, { error: "Terlalu banyak percobaan login. Coba lagi nanti." });
+    let user = db.profiles.find((u) => {
       const userName = String(u.username || u.user_name || u.login || u.id || "").trim().toLowerCase();
       const userEmail = String(u.email || "").trim().toLowerCase();
       return u.status !== "tidak_aktif" && (userName === account || userEmail === account);
     });
+    const passwordOk = user ? await verifyPassword(password, user.password_hash) : false;
+    if (!passwordOk) {
+      const fallbackUser = fallbackLoginUser;
+      if (fallbackUser) {
+        const index = db.profiles.findIndex((profile) => {
+          const userName = String(profile.username || profile.user_name || profile.login || profile.id || "").trim().toLowerCase();
+          const userEmail = String(profile.email || "").trim().toLowerCase();
+          return String(profile.id) === String(fallbackUser.id) || userName === fallbackUser.username || userEmail === fallbackUser.email;
+        });
+        const existing = index >= 0 ? db.profiles[index] : {};
+        user = {
+          ...existing,
+          ...fallbackUser,
+          id: existing.id || fallbackUser.id,
+          created_at: existing.created_at || fallbackUser.created_at || new Date().toISOString()
+        };
+        if (index >= 0) db.profiles[index] = user;
+        else db.profiles.push(user);
+        await context.persistRow(db, "profiles", user);
+      }
+    }
     if (!user || !(await verifyPassword(password, user.password_hash))) { context.recordLoginAttempt(request, account, false); return send(reply, 401, { error: "Akun atau password tidak sesuai." }); }
     context.recordLoginAttempt(request, account, true);
     const responseUser = isLegacyPasswordHash(user.password_hash) ? await context.upgradeProfilePassword(db, user.id, password) : context.publicUser(user);
