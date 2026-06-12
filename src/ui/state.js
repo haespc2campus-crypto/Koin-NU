@@ -535,10 +535,12 @@ export const appState = {
   settingsEditMode: false,
   passwordEditMode: false,
   users: [
+    { id: "demo-superadmin", username: "superadmin", email: "superadmin@rantingnu.id", fullName: "Super Admin", role: "super_admin", phone: "0812-9000-0001", status: "aktif", createdAt: "2026-05-01T07:50:00.000Z" },
     { id: "demo-admin", username: "admin", email: "admin@rantingnu.id", fullName: "Admin Ranting", role: "admin", phone: "0812-9000-1111", status: "aktif", createdAt: "2026-05-01T08:00:00.000Z" },
     { id: "demo-bendahara", username: "bendahara", email: "bendahara@rantingnu.id", fullName: "Hj. Lailatul Badriyah", role: "bendahara", phone: "0881-8100-0505", status: "aktif", createdAt: "2026-05-01T08:10:00.000Z" },
     { id: "demo-petugas", username: "petugas", email: "petugas@rantingnu.id", fullName: "Ahmad Fauzi", role: "petugas", phone: "0812-7000-0101", status: "aktif", createdAt: "2026-05-01T08:20:00.000Z" },
-    { id: "demo-pengurus", username: "pengurus", email: "pengurus@rantingnu.id", fullName: "KH. Muhammad Sholeh", role: "pengurus", phone: "0812-8100-0101", status: "aktif", createdAt: "2026-05-01T08:30:00.000Z" }
+    { id: "demo-pengurus", username: "pengurus", email: "pengurus@rantingnu.id", fullName: "KH. Muhammad Sholeh", role: "pengurus", phone: "0812-8100-0101", status: "aktif", createdAt: "2026-05-01T08:30:00.000Z" },
+    { id: "demo-editor", username: "editor", email: "editor@rantingnu.id", fullName: "Editor Berita", role: "editor_berita", phone: "", status: "aktif", createdAt: "2026-05-01T08:40:00.000Z" }
   ],
   userSearch: "",
   userRole: "all",

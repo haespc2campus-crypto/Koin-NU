@@ -29,10 +29,12 @@ function makeDefaultUser(id, email, password, fullName, role, phone, username = 
   return { id, username, email, password_hash: hashPasswordLegacy(password), full_name: fullName, role, phone, status: "aktif", created_at: new Date().toISOString() };
 }
 const defaultUsers = [
-  makeDefaultUser("demo-admin", "admin@rantingnu.id", "admin123", "Admin Ranting", "admin", "0812-9000-1111", "admin"),
-  makeDefaultUser("demo-bendahara", "bendahara@rantingnu.id", "bendahara123", "Bendahara", "bendahara", "", "bendahara"),
-  makeDefaultUser("demo-petugas", "petugas@rantingnu.id", "petugas123", "Petugas", "petugas", "0812-7000-0101", "petugas"),
-  makeDefaultUser("demo-pengurus", "pengurus@rantingnu.id", "pengurus123", "Pengurus", "pengurus", "", "pengurus")
+  makeDefaultUser("demo-superadmin", "superadmin@rantingnu.id", "SuperAdmin2026!", "Super Admin", "super_admin", "0812-9000-0001", "superadmin"),
+  makeDefaultUser("demo-admin", "admin@rantingnu.id", "Admin2026!", "Admin Ranting", "admin", "0812-9000-1111", "admin"),
+  makeDefaultUser("demo-bendahara", "bendahara@rantingnu.id", "Bendahara2026!", "Bendahara", "bendahara", "", "bendahara"),
+  makeDefaultUser("demo-petugas", "petugas@rantingnu.id", "Petugas2026!", "Petugas", "petugas", "0812-7000-0101", "petugas"),
+  makeDefaultUser("demo-pengurus", "pengurus@rantingnu.id", "Pengurus2026!", "Pengurus", "pengurus", "", "pengurus"),
+  makeDefaultUser("demo-editor", "editor@rantingnu.id", "Editor2026!", "Editor Berita", "editor_berita", "", "editor")
 ];
 
 export function createApiContext(config) {
