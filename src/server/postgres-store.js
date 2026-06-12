@@ -18,11 +18,23 @@ export function createPostgresStore(pool, tables, defaultUsers) {
       for (const table of tables) {
         await client.query(`create table if not exists koin_${table} (id text primary key, data jsonb not null, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`);
       }
-      const profiles = await client.query("select count(*)::int as count from koin_profiles");
-      if (!profiles.rows[0].count) {
-        for (const user of defaultUsers) {
-          await client.query("insert into koin_profiles (id, data) values ($1, $2::jsonb) on conflict do nothing", [user.id, JSON.stringify(user)]);
-        }
+      for (const user of defaultUsers) {
+        const existing = await client.query(
+          "select id, data from koin_profiles where id = $1 or lower(data->>'username') = lower($2) or lower(data->>'email') = lower($3) limit 1",
+          [user.id, user.username || "", user.email || ""]
+        );
+        const id = existing.rows[0]?.id || user.id;
+        const data = {
+          ...(existing.rows[0]?.data || {}),
+          ...user,
+          id,
+          created_at: existing.rows[0]?.data?.created_at || user.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        await client.query(
+          "insert into koin_profiles (id, data, updated_at) values ($1, $2::jsonb, now()) on conflict (id) do update set data = excluded.data, updated_at = now()",
+          [id, JSON.stringify(data)]
+        );
       }
 
       const profilesRanting = await client.query("select count(*)::int as count from koin_ranting_profile");

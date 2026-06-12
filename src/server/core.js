@@ -89,6 +89,33 @@ export function createApiContext(config) {
   function denyToken(token) { if (token) tokenDenylist.add(token); }
 
   function emptyDb() { return Object.fromEntries(tables.map((table) => [table, table === "profiles" ? defaultUsers : []])); }
+  function syncDefaultUsers(db) {
+    let changed = false;
+    for (const user of defaultUsers) {
+      const index = db.profiles.findIndex((profile) => {
+        const userName = String(profile.username || profile.user_name || profile.login || "").trim().toLowerCase();
+        const email = String(profile.email || "").trim().toLowerCase();
+        return String(profile.id) === String(user.id) || userName === user.username || email === user.email;
+      });
+      if (index >= 0) {
+        const next = {
+          ...db.profiles[index],
+          ...user,
+          id: db.profiles[index].id || user.id,
+          created_at: db.profiles[index].created_at || user.created_at,
+          updated_at: new Date().toISOString()
+        };
+        if (JSON.stringify({ ...db.profiles[index], updated_at: "" }) !== JSON.stringify({ ...next, updated_at: "" })) {
+          db.profiles[index] = next;
+          changed = true;
+        }
+      } else {
+        db.profiles.push(user);
+        changed = true;
+      }
+    }
+    return changed;
+  }
   async function ensurePg() {
     if (!pgPool || pgReady) return;
     await pgStore.ensure();
@@ -104,6 +131,7 @@ export function createApiContext(config) {
     if (!existsSync(dbPath)) await writeDb(emptyDb());
     const db = JSON.parse(await readFile(dbPath, "utf8")); let changed = false;
     for (const table of tables) if (!Array.isArray(db[table])) { db[table] = table === "profiles" ? defaultUsers : []; changed = true; }
+    changed = syncDefaultUsers(db) || changed;
     for (const user of db.profiles) { if (user.password) { user.password_hash = hashPasswordLegacy(user.password); delete user.password; changed = true; } if (!user.created_at) { user.created_at = new Date().toISOString(); changed = true; } }
     if (changed) await writeDb(db); return db;
   }
